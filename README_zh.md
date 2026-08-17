@@ -91,3 +91,9 @@ python -m fura_mappo.utils.system_info --output artifacts/runtime_info.json
 - [ ] 未将密钥、Token、IP、用户名路径或大型日志提交到仓库。
 
 详细操作见 `docs/WP00_RUNBOOK.md`。
+
+## 开发与验收流程
+
+项目采用 main-only 交付：Codex 修改 Mac 本地 `main` → Mac 本地测试 → 用户本地 Commit → candidate 标签上传 GitHub → A100 服务器验收 → 用户推送 `main` → GitHub Actions → 稳定标签。
+
+完整协作规则与失败处理见 `docs/CODEX_WORKFLOW.md`。
