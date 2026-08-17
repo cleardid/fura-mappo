@@ -1,150 +1,65 @@
 # WP-00 运行手册：仓库初始化与服务器审计
 
-## 1. 本会话边界
+> 历史文档：WP-00 已完成，稳定标签为 `wp00-stable`，对应 Commit `427b231f73f3194ab9420130744e9ee075998c68`。当前开发和交付流程以 `docs/CODEX_WORKFLOW.md` 为准。本手册保留用于重建基础环境或核对初始审计方法。
 
-本会话只处理：
+## 1. WP-00 范围
 
-- GitHub仓库初始化；
+WP-00 只处理：
+
+- GitHub 仓库初始化；
 - 服务器软硬件审计；
-- 基础Conda环境；
-- 包导入、随机种子、测试和CI；
+- 基础 Conda 环境；
+- 包导入、随机种子、测试和 CI；
 - 跨会话状态文件。
 
-本会话不处理：
+不处理 PyTorch GPU 安装、需求生成器、多智能体环境、MAPPO 或训练。
 
-- PyTorch GPU安装；
-- PettingZoo或Gymnasium环境；
-- 需求生成器；
-- MAPPO；
-- 实验训练。
-
-这样做是为了先消除驱动、磁盘、Python版本和工程复现方面的风险。
-
-## 2. 本地端操作
-
-### 2.1 创建私有仓库
-
-仓库建议命名为：
-
-```text
-fura-mappo
-```
-
-保持私有，至少到代码、数据和论文公开策略确定之后。
-
-### 2.2 上传初始代码
-
-在解压目录执行：
-
-```bash
-git init
-git add .
-git commit -m "chore: initialize WP-00 project skeleton"
-git branch -M main
-git remote add origin <仓库地址>
-git push -u origin main
-```
-
-确认 GitHub 的 `Actions` 页面中 `CPU checks` 通过。
-
-## 3. 服务器端操作
-
-### 3.1 克隆
-
-```bash
-cd ~
-git clone <仓库地址>
-cd fura-mappo
-```
-
-私有仓库建议使用 SSH deploy key 或个人 SSH key。不要把私钥复制到仓库。
-
-### 3.2 只读审计
+## 2. 服务器只读审计
 
 ```bash
 bash scripts/collect_system_info.sh
 sed -n '1,260p' artifacts/system_audit/system_info.txt
 ```
 
-重点检查：
+重点检查 CPU、内存、磁盘、GPU、驱动、`nvcc`、Conda、Python 和 `tmux`。审计输出不得包含 Token、SSH 配置、IP 或不必要的主机信息。
 
-- CPU逻辑核数是否约为80；
--内存是否约为512GB；
-- 两块GPU是否均为A100 80GB；
-- NVIDIA驱动版本；
-- `nvcc`是否存在及其版本；
-- 用户目录和项目目录的剩余磁盘空间；
-- Conda是否能够在非交互SSH shell中使用；
-- Python版本；
-- `tmux`是否存在。
+`nvcc` 不存在不等于 PyTorch 无法使用 GPU；但 WP-01 仍明确不安装 PyTorch。
 
-`nvcc`不存在并不表示PyTorch不能使用GPU。PyTorch二进制包通常携带所需CUDA运行时；最终安装方案以驱动兼容性和项目测试为准。
-
-### 3.3 创建WP-00环境
+## 3. 基础环境
 
 ```bash
 bash scripts/bootstrap_conda_env.sh
+source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate fura-mappo
 python -m pip install -e ".[dev]"
 ```
 
-如果非交互shell无法识别`conda activate`，可先执行：
+服务器系统 Python 2.7 不得用于项目。
+
+## 4. 基础验收
+
+当前统一入口：
 
 ```bash
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate fura-mappo
+bash scripts/verify_cpu.sh
 ```
 
-### 3.4 验收
+WP-00 原始烟雾测试入口仍可用于历史排查：
 
 ```bash
-bash scripts/smoke_test.sh 2>&1 | tee artifacts/wp00_smoke_test.log
+bash scripts/smoke_test.sh
 ```
 
-预期结果：
+实际稳定状态、服务器规格和最新测试结果见 `docs/PROJECT_STATE.md`。
 
-- Ruff无错误；
-- 6个测试通过；
-- 生成`artifacts/runtime_info.json`；
-- 终端输出“WP-00 基础烟雾测试通过”。
+## 5. 历史交付结果
 
-## 4. Git提交策略
+WP-00 建立 Python 包骨架、Conda 基础环境、Ruff、Pytest、GitHub Actions、系统审计、运行时信息工具、全局种子初始化工具以及项目状态文档。OPS-01 后续建立 `AGENTS.md`、main-only 协作流程、工作包模板和 `scripts/verify_cpu.sh`。
 
-建议分为两个Commit：
+## 6. 当前使用规则
 
-```text
-chore: initialize WP-00 project skeleton
-docs: record server audit and WP-00 handoff
-```
-
-默认不要提交`artifacts/`中的审计原始文件。建议把经人工脱敏后的关键结论写入`docs/PROJECT_STATE.md`。如确需保存原始审计信息，只能在私有仓库中单独确认后使用强制添加：
-
-```bash
-git add -f artifacts/system_audit/system_info.txt
-```
-
-通常没有必要这么做。
-
-## 5. 交回下一会话的信息
-
-请保存以下信息：
-
-```text
-仓库URL：
-当前Commit：
-GitHub Actions状态：
-服务器审计摘要：
-pytest结果：
-ruff结果：
-磁盘可用空间：
-NVIDIA驱动版本：
-Conda/Python版本：
-已知异常：
-```
-
-并更新：
-
-- `docs/PROJECT_STATE.md`
-- `docs/SESSION_HANDOFF.md`
-
-完成后，下一会话进入WP-01：非平稳需求生成器。
+- 不再按本历史手册初始化 Git 或创建仓库；
+- 不使用 candidate 标签作为必需验收步骤；
+- 不在服务器直接修改源码；
+- 当前工作包遵循完整补丁审查流程；
+- 最新操作顺序见 `docs/CODEX_WORKFLOW.md` 和 `docs/SESSION_HANDOFF.md`。

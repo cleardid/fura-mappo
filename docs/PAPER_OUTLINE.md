@@ -1,12 +1,90 @@
 # 论文结构草案
 
-1. Introduction
-2. Related Work
-3. Problem Formulation
-4. Forecast-Guided Multi-Agent Resource Pre-positioning
-5. Experimental Protocol
-6. Results
-7. Discussion and Limitations
-8. Conclusion
+状态：结构性草案。正文和最终主张必须等待环境、基线、预测接口和实验协议冻结。
 
-当前仅保留结构，不在WP-00阶段撰写正文。
+## 1. Introduction
+
+- 非平稳时空需求下被动资源响应的局限；
+- 未来需求预测可能带来的主动预置价值；
+- 预测误差和不确定性可能导致的决策风险；
+- 核心研究问题和贡献边界。
+
+## 2. Related Work
+
+- 多智能体资源分配与预置；
+- 时空需求预测；
+- 预测加优化或预测加控制；
+- 不确定性感知强化学习；
+- 非平稳与分布外评估。
+
+相关工作不得把尚未验证的差异写成创新结论。
+
+## 3. Problem Formulation
+
+- 时空区域、资源和任务；
+- 外生需求过程；
+- 服务、移动和截止约束；
+- 观测、动作和信息结构；
+- 预测窗口和不确定性接口；
+- 优化目标与评价指标。
+
+## 4. Exogenous Demand Benchmark
+
+- 平稳 Poisson 基线；
+- Drifting Hotspot；
+- Markov Switching；
+- Burst Demand；
+- 可复现性、ID/OOD 划分和统计验证。
+
+## 5. Forecast-Guided Uncertainty-Aware Resource Pre-positioning
+
+- 反应式和 Oracle 机制；
+- 预测表示；
+- 不确定性特征；
+- MAPPO 架构与集中训练、分散执行；
+- 风险或不确定性如何进入决策。
+
+## 6. Experimental Protocol
+
+- 科学门槛：反应式 vs Oracle；
+- 基线和消融；
+- 配对随机种子；
+- 调参预算；
+- ID/OOD 场景；
+- 预测和控制指标；
+- 统计区间与排除规则；
+- 计算环境和复现材料。
+
+## 7. Results
+
+建议按论证顺序：
+
+1. 未来信息是否有价值；
+2. 预测策略是否接近 Oracle；
+3. 不确定性是否带来额外收益或风险控制；
+4. 不同非平稳过程下的表现；
+5. OOD 稳健性；
+6. 预测价值相图；
+7. 消融和计算成本。
+
+## 8. Discussion and Limitations
+
+- 预测无效或有害的区域；
+- Oracle 上界的解释限制；
+- 合成需求与真实数据之间的差距；
+- 奖励权重和环境假设敏感性；
+- 多智能体规模和部署限制；
+- 概率校准与策略鲁棒性的未决问题。
+
+## 9. Conclusion
+
+只总结被预注册比较和实验支持的结论，不把工程实现本身表述为科学收益。
+
+## 附录计划
+
+- 需求过程定义；
+- 配置和超参数；
+- 完整统计表；
+- 附加 OOD 结果；
+- 复现命令和硬件摘要；
+- 失败案例与敏感性分析。

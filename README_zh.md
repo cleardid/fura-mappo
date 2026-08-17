@@ -1,99 +1,128 @@
 # FURA-MAPPO
 
-面向非平稳时空需求的预测式多智能体资源预置研究项目。
+面向非平稳时空需求的预测引导、不确定性感知多智能体资源预置研究项目。
 
-当前代码包为 **WP-00：仓库初始化与服务器审计**。这一阶段只完成工程基础设施和硬件/软件环境核验，暂不安装 PyTorch，也不实现仿真环境或强化学习算法。
+## 当前状态
 
-## 本阶段目标
+- `WP-00`：仓库骨架、Conda 环境、Ruff、Pytest、GitHub Actions、系统审计和随机种子工具，已完成。
+- `OPS-01`：`AGENTS.md`、Codex 工作流、工作包模板和 CPU 验收脚本，已完成。
+- 远程 `main` 当前基线：`62675e43d17726adde3696f7fd5e5ab4208b6a2a`。
+- 已有稳定标签：`wp00-stable`，对应 `427b231f73f3194ab9420130744e9ee075998c68`。
+- 当前唯一开发目标：`WP-01A`，建立外生需求核心并实现平稳 Poisson 需求。
+- 最新 WP-01A 补丁已完成独立代码审查，未发现新的阻断性缺陷；尚未在 Mac Python 3.11 环境完成最终复验，也尚未 Commit、Push 或服务器验收。
 
-1. 确认服务器的操作系统、CPU、内存、磁盘、GPU、驱动、CUDA、Conda 和 Python 状态。
-2. 建立可测试、可追踪、可跨会话交接的 GitHub 仓库。
-3. 验证基础 Python 包、随机种子工具、单元测试和 GitHub Actions。
-4. 为 WP-01（需求生成器）冻结开发环境和接口约束。
+## 研究目标
 
-## 快速开始
+项目独立于指定原文，研究以下核心问题：
 
-### 1. 在本地解压并上传到 GitHub
+> 在非平稳时空需求下，未来需求预测及预测不确定性是否能够提高多智能体主动资源预置的服务质量、资源效率和分布外稳健性？
 
-建议创建私有仓库 `fura-mappo`。将本目录中的所有文件放入仓库根目录后提交。
+研究必须先验证真实未来信息的价值：比较反应式资源分配与 Oracle 未来需求配置。只有 Oracle 能产生稳定收益时，才继续研究预测模型和 MAPPO。最终系统计划支持：
+
+- 反应式资源分配；
+- Oracle 未来需求配置；
+- 概率需求预测数据生成；
+- 预测引导、风险或不确定性感知的 MAPPO 资源预置；
+- 分布内与分布外评估；
+- 预测误差、校准度和控制收益之间的价值相图分析。
+
+研究要求、科学问题和阶段路线分别见：
+
+- `docs/PROJECT_REQUIREMENTS.md`
+- `docs/RESEARCH_PLAN.md`
+- `docs/ANALYSIS_PLAN.md`
+
+## WP-01 拆分
+
+### WP-01A：当前阶段
+
+- `DemandEvent`、`DemandStep`、`DemandTrace`；
+- `DemandProcess` 的 `reset`、`step`、`generate` 状态语义；
+- 独立 `numpy.random.Generator`；
+- `StationaryPoissonDemand`；
+- 最小需求过程工厂；
+- 严格输入校验和统计测试。
+
+### WP-01B：后续阶段
+
+- Drifting Hotspot；
+- Markov Switching；
+- Burst Demand。
+
+### WP-01C：后续阶段
+
+- 配置与工厂完善；
+- 轨迹序列化；
+- 命令行工具；
+- 统计汇总；
+- 可选可视化。
+
+WP-01A 不得提前实现 WP-01B 或 WP-01C。
+
+## 环境
+
+### Mac
+
+- Codex 桌面版在本地仓库主工作目录工作；
+- 分支为 `main`，不创建额外 worktree；
+- Conda 环境：`fura-mappo-mac`；
+- 仅运行快速 CPU 测试。
+
+### A100 服务器
+
+- CPU：80 核级；
+- 内存：502 GiB；
+- GPU：2 × NVIDIA A100-SXM4-80GB；
+- 驱动：590.48.01；
+- Compute Capability：8.0；
+- Conda：24.9.2；
+- 项目环境：`fura-mappo`；
+- Python：3.11.15；
+- 系统 Python 2.7.18，不得使用；
+- `nvcc` 当前不可用；
+- `tmux`：2.9a。
+
+WP-01 期间不安装 PyTorch、不修改 CUDA 或驱动、不执行 GPU 训练。
+
+## 安装和 CPU 验收
 
 ```bash
-git init
-git add .
-git commit -m "chore: initialize WP-00 project skeleton"
-git branch -M main
-git remote add origin <你的仓库地址>
-git push -u origin main
+conda activate fura-mappo
+python -m pip install -e ".[dev]"
+bash scripts/verify_cpu.sh
 ```
 
-### 2. 在服务器克隆仓库
+Mac 使用对应环境：
 
 ```bash
-cd ~
-git clone <你的仓库地址>
-cd fura-mappo
+conda run --no-capture-output \
+  -n fura-mappo-mac \
+  bash scripts/verify_cpu.sh
 ```
 
-### 3. 先执行无安装审计
-
-```bash
-bash scripts/collect_system_info.sh
-```
-
-输出文件位于：
+## 固定协作流程
 
 ```text
-artifacts/system_audit/system_info.txt
+ChatGPT 制定研究设计和 Codex 任务
+→ Codex 在 Mac 本地 main 修改并测试
+→ Codex 在 Downloads 或 Desktop 生成完整补丁
+→ 用户上传补丁
+→ ChatGPT 独立应用、审查并复测
+→ 有问题时 Codex 聚焦修复并重新上传
+→ 审查通过后用户手工 Commit 和 Push main
+→ A100 服务器 git pull --ff-only 并验收
+→ 通过后更新状态和交接文档
 ```
 
-脚本不会主动采集 SSH 私钥、Token、环境变量、IP 地址或完整主机名，并会尝试将 `$HOME` 路径替换为 `~`。提交前仍应人工检查输出内容。
+不使用功能分支、额外 worktree、必需 PR 或必需 candidate 标签。Codex 不得 Commit、Push 或 Tag。完整规则见 `docs/CODEX_WORKFLOW.md`。
 
-### 4. 创建基础 Conda 环境
+## 文档入口
 
-本阶段环境不安装 PyTorch。GPU版 PyTorch 必须等服务器审计完成后，根据驱动和 CUDA 兼容性单独确定。
-
-```bash
-conda env create -f environment.yml
-conda activate fura-mappo
-python -m pip install -e ".[dev]"
-```
-
-若环境已经存在：
-
-```bash
-conda env update -f environment.yml --prune
-conda activate fura-mappo
-python -m pip install -e ".[dev]"
-```
-
-### 5. 执行验收
-
-```bash
-bash scripts/smoke_test.sh
-```
-
-或分别执行：
-
-```bash
-python -m pytest -q
-python -m ruff check .
-python -m fura_mappo.utils.system_info --output artifacts/runtime_info.json
-```
-
-## WP-00 完成标准
-
-- [ ] GitHub 仓库已创建并完成首次提交。
-- [ ] GitHub Actions 的 `CPU checks` 通过。
-- [ ] 服务器完成 `collect_system_info.sh`。
-- [ ] 本地/服务器 `pytest` 和 `ruff` 均通过。
-- [ ] `docs/PROJECT_STATE.md` 已填写服务器审计摘要。
-- [ ] `docs/SESSION_HANDOFF.md` 已记录当前 Commit、测试结果和下一步。
-- [ ] 未将密钥、Token、IP、用户名路径或大型日志提交到仓库。
-
-详细操作见 `docs/WP00_RUNBOOK.md`。
-
-## 开发与验收流程
-
-项目采用 main-only 交付：Codex 修改 Mac 本地 `main` → Mac 本地测试 → 用户本地 Commit → candidate 标签上传 GitHub → A100 服务器验收 → 用户推送 `main` → GitHub Actions → 稳定标签。
-
-完整协作规则与失败处理见 `docs/CODEX_WORKFLOW.md`。
+- 文档索引：`docs/DOCUMENTATION_INDEX.md`
+- 当前状态：`docs/PROJECT_STATE.md`
+- 会话交接：`docs/SESSION_HANDOFF.md`
+- 项目决策：`docs/DECISIONS.md`
+- WP-01 总体需求规范：`docs/WP01_DEMAND_GENERATION.md`
+- WP-01A 规范：`docs/WP01A_SPEC.md`
+- WP-01A 操作手册：`docs/WP01A_RUNBOOK.md`
+- WP-01A 审查：`docs/WP01A_REVIEW.md`

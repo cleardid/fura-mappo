@@ -22,6 +22,30 @@ class SeedState:
     python_hash_seed: str
 
 
+def create_numpy_generator(seed: int) -> np.random.Generator:
+    """创建不依赖 NumPy 全局随机状态的独立生成器。
+
+    Args:
+        seed: 非负整数随机种子。NumPy 整数标量会规范化为 Python ``int``。
+
+    Returns:
+        使用指定种子创建的全新 ``numpy.random.Generator``。
+
+    Raises:
+        TypeError: ``seed`` 是布尔值或不是整数时抛出。
+        ValueError: ``seed`` 为负数时抛出。
+    """
+
+    if isinstance(seed, bool) or not isinstance(seed, (int, np.integer)):
+        raise TypeError("seed 必须是整数且不能是布尔值")
+
+    normalized_seed = int(seed)
+    if normalized_seed < 0:
+        raise ValueError("seed 必须是非负整数")
+
+    return np.random.default_rng(normalized_seed)
+
+
 def seed_python_and_numpy(seed: int) -> SeedState:
     """为 Python 标准库和 NumPy 设置随机种子。
 
