@@ -2,16 +2,18 @@
 
 面向非平稳时空需求的预测引导、不确定性感知多智能体资源预置研究项目。
 
+
 ## 当前状态
 
 - `WP-00`：仓库骨架、Conda 环境、Ruff、Pytest、GitHub Actions、系统审计和随机种子工具，已完成。
 - `OPS-01`：Codex 协作规范、工作流、工作包模板和 CPU 验收脚本，已完成。
-- `WP-01A`：外生需求核心与平稳 Poisson 过程，已完成。
-- WP-01A 实现 Commit：`b7b48bb394bd4613652b4d1ff4158cb8503f52a5`。
-- GitHub Actions `CPU checks` 第 3 次运行：通过。
-- A100 CPU 与 WP-01A 专项验收：用户确认全部通过。
-- 稳定里程碑标签：`wp01a-stable` → `b7b48bb394bd4613652b4d1ff4158cb8503f52a5`。
-- 当前唯一开发目标：`WP-01B`。先进行只读设计分析，设计审查前不得修改源码。
+- `WP-01A`：外生需求核心与平稳 Poisson，已完成；`wp01a-stable` 指向 `b7b48bb394bd4613652b4d1ff4158cb8503f52a5`。
+- `WP-01B`：Drifting Hotspot、Markov Switching 和 Burst Demand，已完成。
+- WP-01B 实现 Commit：`d67f71b5d75ee47adb120686914d32572ea7d6d1`。
+- GitHub Actions `CPU checks` run #5：成功。
+- A100 服务器验收：Python 3.11.15、Conda 环境 `fura-mappo`，用户确认全部通过。
+- 稳定里程碑标签：`wp01b-stable` → `d67f71b5d75ee47adb120686914d32572ea7d6d1`。
+- 当前唯一开发目标：`WP-01C`。先进行只读设计分析，设计审查前不得修改源码。
 
 ## 研究目标
 
@@ -34,6 +36,7 @@
 - `docs/RESEARCH_PLAN.md`
 - `docs/ANALYSIS_PLAN.md`
 
+
 ## WP-01 拆分
 
 ### WP-01A：已完成
@@ -45,25 +48,29 @@
 - 最小需求过程工厂；
 - 严格输入校验和统计测试。
 
-WP-01A 的数据模型、随机性隔离和公共状态语义已冻结，WP-01B 原则上不得修改。
+### WP-01B：已完成
 
-### WP-01B：当前阶段
+- `DriftingHotspotDemand`：确定性反射移动和守恒的热点总增量；
+- `MarkovSwitchingDemand`：当前状态发射、随后转移；
+- `BurstDemand`：非重叠加法 burst，启动步立即生效；
+- 内部共享 Poisson Step 生成层；
+- 四类型严格内存工厂；
+- 过程状态、随机性、数值边界和长期统计测试。
 
-只增加：
+WP-01A/WP-01B 的数据模型、随机性隔离、公共状态语义和四类过程科学行为已冻结。
 
-- Drifting Hotspot；
-- Markov Switching；
-- Burst Demand。
+### WP-01C：当前阶段
 
-当前先执行只读设计分析，明确参数化、隐状态、工厂扩展、统计测试和 ID/OOD 边界。不得提前加入 WP-01C 功能。
+只允许设计和实现：
 
-### WP-01C：未开始
-
-- 配置与工厂完善；
-- 轨迹序列化；
+- 安全配置文件与严格加载；
+- 工厂维护性完善；
+- 轨迹序列化与读取；
 - 命令行工具；
 - 统计汇总；
 - 可选可视化。
+
+当前先冻结格式、schema/version、metadata、路径与覆盖规则、CLI 子命令和测试方案。不得提前加入智能体环境、预测或强化学习功能。
 
 ## 环境
 
@@ -99,19 +106,21 @@ ChatGPT 制定研究设计和 Codex 任务
 → 用户上传补丁
 → ChatGPT 独立应用、审查并复测
 → 有问题时 Codex 聚焦修复并重新上传
-→ 审查通过后用户手工 Commit 和 Push main
-→ A100 服务器 git pull --ff-only 并验收
+→ 审查通过后用户运行一键发布脚本并显式确认
+→ A100 服务器一键 fast-forward 同步并验收
 → 通过后更新状态和交接文档
 ```
 
-不使用功能分支、额外 worktree、必需 PR 或必需 candidate 标签。Codex 不得 Commit、Push 或 Tag。完整规则见 `docs/CODEX_WORKFLOW.md`。
+不使用功能分支、额外 worktree、必需 PR 或必需 candidate 标签。辅助脚本可以减少终端操作，但不改变 Codex 权限；Codex 不得 Commit、Push 或 Tag。完整规则见 `docs/CODEX_WORKFLOW.md`。
 
 ## 文档入口
 
 - 文档索引：`docs/DOCUMENTATION_INDEX.md`
 - 当前状态：`docs/PROJECT_STATE.md`
-- 会话交接及 WP-01B 入口：`docs/SESSION_HANDOFF.md`
+- 会话交接及 WP-01C 入口：`docs/SESSION_HANDOFF.md`
 - 项目决策：`docs/DECISIONS.md`
 - WP-01 总体需求规范：`docs/WP01_DEMAND_GENERATION.md`
 - WP-01A 冻结规范：`docs/WP01A_SPEC.md`
 - WP-01A 完成审查：`docs/WP01A_REVIEW.md`
+- WP-01B 冻结规范：`docs/WP01B_SPEC.md`
+- WP-01B 完成审查：`docs/WP01B_REVIEW.md`

@@ -6,11 +6,12 @@
 
 - 项目目标：研究非平稳时空需求下，利用未来需求预测及其不确定性进行多智能体主动资源预置。
 - 当前主线：`WP-01` 外生需求生成器。
-- `WP-01A` 已完成，冻结实现 Commit 为 `b7b48bb394bd4613652b4d1ff4158cb8503f52a5`。
-- 当前子工作包：`WP-01B`，只处理 Drifting Hotspot、Markov Switching 和 Burst Demand。
-- 当前第一阶段是 WP-01B 只读设计分析；设计审查通过前不得修改源码。
-- WP-01B 期间继续 CPU-only，不安装 PyTorch，不修改 CUDA、NVIDIA 驱动或服务器系统环境。
-- 不得提前实现 WP-01C、智能体环境、奖励、预测模型或强化学习功能。
+- `WP-01A` 已完成，稳定实现 Commit 为 `b7b48bb394bd4613652b4d1ff4158cb8503f52a5`，标签为 `wp01a-stable`。
+- `WP-01B` 已完成，稳定实现 Commit 为 `d67f71b5d75ee47adb120686914d32572ea7d6d1`，标签为 `wp01b-stable`。
+- 当前子工作包：`WP-01C`，只处理配置与工厂完善、轨迹序列化、CLI、统计汇总和可选可视化。
+- 当前第一阶段是 WP-01C 只读设计分析；设计审查通过前不得修改源码。
+- WP-01 继续 CPU-only，不安装 PyTorch，不修改 CUDA、NVIDIA 驱动或服务器系统环境。
+- 不得提前实现智能体环境、任务服务、奖励、预测模型、MAPPO 或 GPU 训练。
 
 完整研究范围见 `docs/PROJECT_REQUIREMENTS.md` 和 `docs/RESEARCH_PLAN.md`；当前状态见 `docs/PROJECT_STATE.md`。
 
@@ -35,7 +36,8 @@
 8. 对类型、值域、维度和配置错误应抛出明确的 `TypeError` 或 `ValueError`。
 9. 不得静默截断数值、接受维度不匹配或原地修改调用方配置。
 10. 科学组件必须与策略、智能体状态、动作、奖励和模型参数解耦，除非后续工作包明确改变边界。
-11. WP-01B 必须复用 WP-01A 已冻结的数据模型、RNG 隔离和 `reset`/`step`/`generate` 状态语义；任何接口变更都必须先形成明确决策。
+11. WP-01C 必须保持 WP-01A/WP-01B 已冻结的数据模型、RNG 隔离、四类过程行为和 `reset`/`step`/`generate` 状态语义兼容。
+12. 配置读取、序列化和 CLI 必须把文件内容视为不可信外部输入；不得执行任意对象构造、隐式覆盖文件或隐藏路径解析规则。
 
 ## 4. 修改边界与真实性
 
@@ -48,7 +50,7 @@
 7. 不得提交大型数据、日志、模型、检查点、Token、SSH 配置或敏感服务器信息。
 8. 历史运行手册和已完成工作包的变更记录原则上只追加勘误，不重写历史事实。
 
-## 5. Git 与审查交付
+## 5. Git、补丁审查与一键交付
 
 1. 项目采用单人 `main-only` 流程，不创建功能分支、额外 worktree 或必需 Pull Request。
 2. Codex 只在用户指定的 Mac 本地 `main` 工作目录中分析、修改和测试。
@@ -58,8 +60,10 @@
 6. 审查补丁只写入 `$HOME/Downloads/` 或 `$HOME/Desktop/`，不得写入 `/tmp`。
 7. 用户将补丁上传到独立审查会话；审查通过前不得提交或推送。
 8. 审查有问题时，只做聚焦修复并重新生成完整补丁；审查通过后再由用户提交到 `main`。
-9. 已推送错误只能通过追加修复 Commit 或 `git revert` 处理，禁止 force push。
-10. 完整流程与验收规则见 `docs/CODEX_WORKFLOW.md`。
+9. 经审查的一键脚本可以自动执行核对、测试、标签、提交、推送和服务器同步，但必须校验完整 Commit/SHA、干净工作树和允许文件，并在发布写操作前要求用户显式确认。
+10. 一键脚本不改变 Codex 权限边界，也不允许 force push 或历史重写。
+11. 已推送错误只能通过追加修复 Commit 或 `git revert` 处理，禁止 force push。
+12. 完整流程与验收规则见 `docs/CODEX_WORKFLOW.md`。
 
 ## 6. 完成报告
 
@@ -71,4 +75,5 @@ Codex 每次任务结束至少报告：
 - `git diff --check`；
 - `git diff --stat`，并说明未跟踪文件是否计入；
 - `git status --short`；
+- 审查补丁路径、Diff 段数、字节数和 SHA-256；
 - 明确确认未 Commit、未 Push。

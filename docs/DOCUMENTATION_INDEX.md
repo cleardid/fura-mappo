@@ -17,17 +17,29 @@
 
 ## 2. 当前工作包文档
 
-当前工作包是 WP-01B，当前仅进行只读设计分析。设计确认后再新增或冻结 WP-01B 专项规范，不能在分析前把候选参数写成已接受接口。
+当前工作包是 WP-01C，当前仅进行只读设计分析。设计确认后再冻结配置、序列化、CLI、统计汇总和可视化接口，不能把候选格式写成已接受协议。
 
 必须先读取：
 
 - `docs/WP01_DEMAND_GENERATION.md`：WP-01 全局规范和 A/B/C 边界；
 - `docs/WP01A_SPEC.md`：WP-01A 已冻结公共接口；
+- `docs/WP01B_SPEC.md`：四类需求过程已冻结科学和配置语义；
 - `docs/PROJECT_STATE.md`：已验证基线和当前待办；
-- `docs/SESSION_HANDOFF.md`：WP-01B 只读分析入口；
+- `docs/SESSION_HANDOFF.md`：WP-01C 只读分析入口；
+- `configs/README.md`：配置目录当前边界；
 - `docs/DECISIONS.md`：不可违反的项目决策。
 
 ## 3. 已完成工作包文档
+
+
+### WP-01B
+
+- `docs/WP01B_SPEC.md`：已冻结接口、过程定义和测试要求；
+- `docs/WP01B_RUNBOOK.md`：已完成的实现、审查、发布和服务器验收流程；
+- `docs/WP01B_REVIEW.md`：独立审查及最终验收记录；
+- `CHANGELOG_WP01B.md`：WP-01B 已完成变更摘要。
+
+### WP-01A 与历史基础
 
 - `docs/WP01A_SPEC.md`：已冻结的 WP-01A 范围、接口和测试要求；
 - `docs/WP01A_RUNBOOK.md`：已完成的实现、审查和验收流程；
@@ -40,6 +52,7 @@
 ## 4. 专用维护规则
 
 - `SECURITY.md` 只在安全策略变化时更新；
+- Desktop/Downloads 中的一键脚本是操作辅助，不是项目事实来源；事实仍以 Git、测试和仓库文档为准；
 - `configs/README.md` 只描述配置目录边界，WP-01C 前不新增持久化需求配置；
 - `docs/EXPERIMENT_LEDGER.csv` 只记录实际执行的正式实验，不记录计划；
 - README 只保留概览，不堆叠完整工作包设计；

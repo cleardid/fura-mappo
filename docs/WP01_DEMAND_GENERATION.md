@@ -10,7 +10,7 @@ WP-01 分为三个按顺序完成的子工作包：
 - **WP-01B**：Drifting Hotspot、Markov Switching、Burst Demand；
 - **WP-01C**：配置、工厂扩展、数据序列化、CLI、统计汇总和可选可视化。
 
-不得在前一子工作包验收前提前实现后一子工作包。WP-01A 已完成；当前进入 WP-01B 只读设计阶段。
+不得在前一子工作包验收前提前实现后一子工作包。WP-01A 和 WP-01B 已完成；当前进入 WP-01C 只读设计阶段。
 
 ## 2. 全局科学约束
 
@@ -251,43 +251,104 @@ deadline_offset_range
 - 固定 seed、20,000 步、逐区域八个标准误的 Poisson 均值检验；
 - 原有 WP-00 测试继续通过。
 
-## 8. WP-01B 规划边界
 
-WP-01B 仅增加：
+## 8. WP-01B 已冻结非平稳过程
 
-- Drifting Hotspot；
-- Markov Switching；
-- Burst Demand。
+### 8.1 Drifting Hotspot
 
-必须复用 WP-01A 的数据模型、公共状态语义、RNG 隔离和工厂约定。具体参数化、状态暴露和 OOD 边界在 WP-01B 设计审查时冻结。
+```text
+type: "drifting_hotspot"
+base_intensities[num_zones]
+hotspot_amplitudes[num_hotspots]
+hotspot_scales[num_hotspots]
+initial_hotspot_positions[num_hotspots, 2]
+hotspot_velocities[num_hotspots, 2]
+```
 
-## 9. WP-01C 规划边界
+每个热点使用区域中心、矩形面积和各向同性高斯构造 log-space 稳定权重。amplitude 表示每步总到达率增量，归一化后分配到各区域。当前热点位置先发射，完整 Step 成功后再按确定性反射推进。
+
+### 8.2 Markov Switching
+
+```text
+type: "markov_switching"
+state_intensities[num_states, num_zones]
+transition_matrix[num_states, num_states]
+initial_state
+```
+
+当前状态先发射，随后转移。转移矩阵严格校验并轻微归一化；只有一个正概率目标的确定性行不消费 RNG。
+
+### 8.3 Burst Demand
+
+```text
+type: "burst"
+base_intensities[num_zones]
+burst_probability
+burst_duration_range
+burst_amplitude_range
+burst_zone_weights[num_zones]
+```
+
+仅在空闲步抽启动，启动步立即发射，活动期间不重叠启动。活动强度为基础强度加 amplitude 乘稳定归一化区域权重。
+
+### 8.4 状态与共享层
+
+- 三类过程保持 WP-01A 的独立 Generator、`reset/step/generate` 和连续 event ID 语义；
+- reset 候选 Generator 或隐状态重建失败时，原公共状态保持不变；
+- 未导出的 `_PoissonDemandProcess` 统一四类过程的事件生成；
+- Stationary 相同配置/seed 轨迹与 WP-01A 原实现精确一致；
+- 不公开热点、Markov 或 burst 隐状态属性。
+
+## 9. WP-01B 四类型工厂
+
+```text
+stationary_poisson
+drifting_hotspot
+markov_switching
+burst
+```
+
+工厂按规范类型使用严格字段集合，区分大小写、无别名，同时排序报告缺失和多余字段，不修改调用方 Mapping、嵌套序列或数组。
+
+## 10. WP-01B 测试与验收
+
+至少覆盖：
+
+- 同 seed 复现、不同实例隔离、全局 RNG 不污染；
+- reset 原子性和三类隐状态时序；
+- Stationary 精确回归；
+- Drifting 独立参考强度、反射和总增量守恒；
+- Markov 稳态占用、转移率和条件 Poisson；
+- Burst 活动率、duration 语义和条件 Poisson；
+- Poisson 安全上界、极端数值、配置不变性和退化配置随机消耗；
+- 四类型工厂 schema。
+
+已验收结果：Mac `293 passed`，独立审查通过，GitHub Actions run #5 成功，A100 Python 3.11.15 验收由用户确认通过。
+
+## 11. WP-01C 规划边界
 
 WP-01C 才允许加入：
 
-- 配置文件读取；
-- 工厂扩展；
-- NPZ、CSV 或 JSON 序列化；
+- 安全配置文件读取和 schema/version；
+- 工厂维护性完善；
+- NPZ、JSON 或经设计批准的组合序列化；
 - CLI；
 - 统计汇总；
-- 可选 Matplotlib 可视化。
+- 可选 Matplotlib 可视化；
+- 复现 manifest、配置哈希和输出元数据。
 
-不得在 WP-01A/01B 提前引入这些设施。
+设计必须明确格式版本、事件编码、dtype/shape、原子写入、覆盖策略、损坏文件、路径解析、stdout/stderr、退出码和可视化依赖。
 
-## 10. WP-01 非目标
+## 12. WP-01 非目标
 
 整个 WP-01 不实现 PettingZoo、智能体运动、任务服务逻辑、奖励、MAPPO、PyTorch、GPU 训练、多进程或大规模性能优化。
 
-## 11. 当前状态
+## 13. 当前状态
 
-截至 2026-08-17：
+截至 2026-08-18：
 
-- WP-01A 已完成；
-- 实现 Commit：`b7b48bb394bd4613652b4d1ff4158cb8503f52a5`；
-- 稳定标签：`wp01a-stable`；
-- 独立补丁审查专项测试：`164 passed`；
-- 补入远程基线测试后的隔离完整测试：`166 passed`；
-- GitHub Actions `CPU checks` run #3：成功；
-- A100 CPU 与专项验收：用户确认通过。
-
-WP-01A 的数据模型、RNG 隔离、状态语义、事件编号和工厂安全原则现已冻结。当前只启动 WP-01B 只读设计分析，明确三类非平稳过程的参数化、隐状态、测试和 ID/OOD 边界后，才进入实现。
+- WP-01A 已完成，Commit `b7b48bb394bd4613652b4d1ff4158cb8503f52a5`，标签 `wp01a-stable`；
+- WP-01B 已完成，Commit `d67f71b5d75ee47adb120686914d32572ea7d6d1`，标签 `wp01b-stable`；
+- GitHub Actions `CPU checks` run #5 成功；
+- A100 Python 3.11.15 验收通过；
+- 当前只启动 WP-01C 只读设计分析。
