@@ -2,15 +2,19 @@
 
 更新日期：2026-08-17
 
-## 1. 项目基线
+## 1. 已验证基线
 
 - 项目：FURA-MAPPO
 - 仓库：`https://github.com/cleardid/fura-mappo`
 - 分支：`main`
-- 远程最新 Commit：`62675e43d17726adde3696f7fd5e5ab4208b6a2a`
-- 远程最新提交说明：`chore: establish Codex collaboration workflow`
+- WP-01A 实现 Commit：`b7b48bb394bd4613652b4d1ff4158cb8503f52a5`
+- 实现提交说明：`feat: add WP-01A stationary demand core`
+- WP-01A 稳定标签：`wp01a-stable`
+- 标签目标：`b7b48bb394bd4613652b4d1ff4158cb8503f52a5`
 - 初始稳定标签：`wp00-stable`
-- 标签 Commit：`427b231f73f3194ab9420130744e9ee075998c68`
+- 初始标签 Commit：`427b231f73f3194ab9420130744e9ee075998c68`
+
+本文件所在的文档收尾 Commit 不硬编码自身 SHA；当前仓库 Commit 应以 `git rev-parse HEAD` 为准。科研实现稳定基线固定为上述 WP-01A Commit。
 
 ## 2. 工作包状态
 
@@ -18,61 +22,67 @@
 |---|---|---|
 | WP-00 | 已完成 | 项目骨架、环境、Ruff、Pytest、CI、系统审计、随机种子和状态文档 |
 | OPS-01 | 已完成 | Codex 协作规范、工作流、工作包模板和 CPU 验收脚本 |
-| WP-01A | 补丁审查通过，待正式验收 | 平稳 Poisson 需求核心；尚未 Commit、Push 或服务器验收 |
-| WP-01B | 未开始 | Drifting Hotspot、Markov Switching、Burst Demand |
+| WP-01A | 已完成 | 核心数据结构、统一状态接口、平稳 Poisson、工厂和统计验证 |
+| WP-01B | 准备开始 | 先进行只读设计分析；仅包含 Drifting Hotspot、Markov Switching、Burst Demand |
 | WP-01C | 未开始 | 配置、序列化、CLI、统计汇总和可选可视化 |
 
-当前唯一目标是完成 WP-01A 的 Mac、Commit/Push 和服务器验收，不得开始 WP-01B。
+当前唯一目标是 WP-01B 只读设计分析。设计确认前不得修改源码或提前实现 WP-01C。
 
-## 3. WP-01A 候选实现
-
-补丁：
+## 3. WP-01A 已冻结接口
 
 ```text
-wp01a-review.patch
-SHA-256: 97fe150926f746708b662126233553621595e1e234151fe40b98fa1ec4600195
+DemandEvent
+DemandStep
+DemandTrace
+DemandProcess
+StationaryPoissonDemand
+create_demand_process
+create_numpy_generator
 ```
 
-实现文件：
+核心语义：
 
-```text
-src/fura_mappo/utils/seeding.py
-src/fura_mappo/demand/__init__.py
-src/fura_mappo/demand/models.py
-src/fura_mappo/demand/processes.py
-src/fura_mappo/demand/factory.py
-tests/test_seeding.py
-tests/test_demand_models.py
-tests/test_stationary_demand.py
-tests/test_demand_factory.py
-```
+- 每个需求过程实例独占 `numpy.random.Generator`；
+- `reset(None)` 重放当前基准 seed；
+- `reset(seed)` 切换并保存新基准 seed；
+- `step()` 仅在完整 `DemandStep` 构造成功后推进状态；
+- `generate(n)` 从当前状态继续；
+- `generate(n, seed=s)` 从 step 0 重启并更新基准 seed；
+- event ID 连续递增；
+- 输出数组防御性复制并设置只读；
+- 需求过程不读取智能体、动作、奖励或任务完成状态。
 
-独立审查结论：无已知阻断性缺陷，可进入 Mac Python 3.11 最终验收。详细记录见 `docs/WP01A_REVIEW.md`。
+WP-01B 必须复用这些接口和语义。任何变更都需要先形成决策记录并重新审查兼容性。
 
-## 4. 已验证结果
+## 4. WP-01A 验收证据
 
-### OPS-01 服务器验收
+### 独立补丁审查
 
-- Commit：`62675e43d17726adde3696f7fd5e5ab4208b6a2a`
-- Python：3.11.15
-- `pip check`：通过
-- Ruff：通过
-- Ruff 格式检查：通过
-- Pytest：6 passed
-- CPU 验收：通过
+- 补丁 SHA-256：`97fe150926f746708b662126233553621595e1e234151fe40b98fa1ec4600195`；
+- 专项测试：`164 passed`；
+- 补入远程基线测试后的隔离完整测试：`166 passed`；
+- `git apply --check`：通过；
+- `git diff --check`：通过；
+- 额外边界、多种子和状态隔离检查：通过；
+- 早期混合 bool、set/generator 范围问题已修复。
 
-### WP-01A 初始 Codex 实现结果
+隔离审查使用 Python 3.13，只作为补充证据，不替代正式 Python 3.11 验收。
 
-在前一版修复前，Mac 完整 CPU 验收报告为 150 passed。独立审查随后发现混合 bool 和一次性范围输入问题，已经在最新补丁修复，因此该 150 结果不能作为最新补丁的最终验收。
+### GitHub
 
-### WP-01A 最新补丁独立复测
+- `main` 实现 Commit：`b7b48bb394bd4613652b4d1ff4158cb8503f52a5`；
+- GitHub Actions 工作流：`CPU checks`；
+- Run：#3；
+- 结论：成功。
 
-- 专项测试：164 passed
-- 重建完整基线测试：166 passed
-- `git apply --check`：通过
-- `git diff --check`：通过
-- 额外边界和多种子检查：通过
-- 环境：Python 3.13，仅作补充证据，不替代官方 Python 3.11 验收
+### A100 服务器
+
+- 用户确认 `git pull --ff-only` 后的 CPU 与 WP-01A 专项测试全部通过；
+- 项目 Python：3.11.15；
+- 服务器不直接修改源码；
+- 原始日志、大型输出和敏感环境信息不提交仓库。
+
+本次会话未收到逐行服务器日志，因此这里只记录已确认的通过结论，不虚构具体测试数量或终端输出。
 
 ## 5. 服务器环境
 
@@ -93,20 +103,17 @@ tmux：2.9a
 
 WP-01 继续 CPU-only，不安装 PyTorch、不修改 CUDA 或驱动、不执行 GPU 训练。
 
-## 6. 当前待办
+## 6. 下一步
 
-1. 把本次文档包合并到 Mac 候选工作树；
-2. 在 `fura-mappo-mac` 运行最新补丁专项测试和 `scripts/verify_cpu.sh`；
-3. 检查完整 Diff、暂存区和未跟踪文件；
-4. 用户手工 Commit：`feat: add WP-01A stationary demand core`；
-5. Push 到 `origin/main`；
-6. A100 服务器 `git pull --ff-only` 并执行 CPU 和 WP-01A 专项验收；
-7. 记录实际 Commit、GitHub Actions 和服务器结果；
-8. 只有 WP-01A 完成后才规划 WP-01B。
+1. 冻结本次文档收尾 Commit，并保持工作树干净；
+2. A100 同步文档收尾 Commit，确认 `git status --short` 无输出；
+3. 启动 WP-01B 阶段 1：Codex 只读设计分析；
+4. 审查三类过程的参数化、隐状态、工厂扩展、统计测试和 ID/OOD 边界；
+5. 设计确认后才生成 WP-01B 实现任务。
 
-## 7. 已知风险
+## 7. 当前风险
 
-- 最新补丁尚未在受支持的 Python 3.11 Mac 环境完成最终复验；
-- 当前文档记录的是候选状态，服务器通过后必须再次更新实际 Commit 和最终验收结果；
-- `pyproject.toml` 允许 Python 3.10–3.12，Ruff 目标为 py310，而项目运行规范固定 Python 3.11；该差异不在 WP-01A 中顺带修改；
-- WP-01A 不包含序列化和外部配置，不能误写为完整 WP-01 已完成。
+- WP-01B 参数化、隐状态暴露和 OOD 边界尚未冻结；
+- `pyproject.toml` 允许 Python 3.10–3.12、Ruff 目标为 py310，而项目运行规范固定 Python 3.11；该差异不在 WP-01 中顺带修改；
+- WP-01B 不得为了方便提前加入 YAML、序列化、CLI 或绘图；
+- WP-01A 的稳定接口在后续扩展中必须保持兼容。

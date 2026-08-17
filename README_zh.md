@@ -5,11 +5,13 @@
 ## 当前状态
 
 - `WP-00`：仓库骨架、Conda 环境、Ruff、Pytest、GitHub Actions、系统审计和随机种子工具，已完成。
-- `OPS-01`：`AGENTS.md`、Codex 工作流、工作包模板和 CPU 验收脚本，已完成。
-- 远程 `main` 当前基线：`62675e43d17726adde3696f7fd5e5ab4208b6a2a`。
-- 已有稳定标签：`wp00-stable`，对应 `427b231f73f3194ab9420130744e9ee075998c68`。
-- 当前唯一开发目标：`WP-01A`，建立外生需求核心并实现平稳 Poisson 需求。
-- 最新 WP-01A 补丁已完成独立代码审查，未发现新的阻断性缺陷；尚未在 Mac Python 3.11 环境完成最终复验，也尚未 Commit、Push 或服务器验收。
+- `OPS-01`：Codex 协作规范、工作流、工作包模板和 CPU 验收脚本，已完成。
+- `WP-01A`：外生需求核心与平稳 Poisson 过程，已完成。
+- WP-01A 实现 Commit：`b7b48bb394bd4613652b4d1ff4158cb8503f52a5`。
+- GitHub Actions `CPU checks` 第 3 次运行：通过。
+- A100 CPU 与 WP-01A 专项验收：用户确认全部通过。
+- 稳定里程碑标签：`wp01a-stable` → `b7b48bb394bd4613652b4d1ff4158cb8503f52a5`。
+- 当前唯一开发目标：`WP-01B`。先进行只读设计分析，设计审查前不得修改源码。
 
 ## 研究目标
 
@@ -34,7 +36,7 @@
 
 ## WP-01 拆分
 
-### WP-01A：当前阶段
+### WP-01A：已完成
 
 - `DemandEvent`、`DemandStep`、`DemandTrace`；
 - `DemandProcess` 的 `reset`、`step`、`generate` 状态语义；
@@ -43,21 +45,25 @@
 - 最小需求过程工厂；
 - 严格输入校验和统计测试。
 
-### WP-01B：后续阶段
+WP-01A 的数据模型、随机性隔离和公共状态语义已冻结，WP-01B 原则上不得修改。
+
+### WP-01B：当前阶段
+
+只增加：
 
 - Drifting Hotspot；
 - Markov Switching；
 - Burst Demand。
 
-### WP-01C：后续阶段
+当前先执行只读设计分析，明确参数化、隐状态、工厂扩展、统计测试和 ID/OOD 边界。不得提前加入 WP-01C 功能。
+
+### WP-01C：未开始
 
 - 配置与工厂完善；
 - 轨迹序列化；
 - 命令行工具；
 - 统计汇总；
 - 可选可视化。
-
-WP-01A 不得提前实现 WP-01B 或 WP-01C。
 
 ## 环境
 
@@ -84,22 +90,6 @@ WP-01A 不得提前实现 WP-01B 或 WP-01C。
 
 WP-01 期间不安装 PyTorch、不修改 CUDA 或驱动、不执行 GPU 训练。
 
-## 安装和 CPU 验收
-
-```bash
-conda activate fura-mappo
-python -m pip install -e ".[dev]"
-bash scripts/verify_cpu.sh
-```
-
-Mac 使用对应环境：
-
-```bash
-conda run --no-capture-output \
-  -n fura-mappo-mac \
-  bash scripts/verify_cpu.sh
-```
-
 ## 固定协作流程
 
 ```text
@@ -120,9 +110,8 @@ ChatGPT 制定研究设计和 Codex 任务
 
 - 文档索引：`docs/DOCUMENTATION_INDEX.md`
 - 当前状态：`docs/PROJECT_STATE.md`
-- 会话交接：`docs/SESSION_HANDOFF.md`
+- 会话交接及 WP-01B 入口：`docs/SESSION_HANDOFF.md`
 - 项目决策：`docs/DECISIONS.md`
 - WP-01 总体需求规范：`docs/WP01_DEMAND_GENERATION.md`
-- WP-01A 规范：`docs/WP01A_SPEC.md`
-- WP-01A 操作手册：`docs/WP01A_RUNBOOK.md`
-- WP-01A 审查：`docs/WP01A_REVIEW.md`
+- WP-01A 冻结规范：`docs/WP01A_SPEC.md`
+- WP-01A 完成审查：`docs/WP01A_REVIEW.md`

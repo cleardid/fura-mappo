@@ -6,9 +6,11 @@
 
 - 项目目标：研究非平稳时空需求下，利用未来需求预测及其不确定性进行多智能体主动资源预置。
 - 当前主线：`WP-01` 外生需求生成器。
-- 当前子工作包：`WP-01A` 核心数据结构、公共状态接口和平稳 Poisson 需求。
-- `WP-01A` 期间保持 CPU-only，不安装 PyTorch，不修改 CUDA、NVIDIA 驱动或服务器系统环境。
-- 不得提前实现 WP-01B、WP-01C 或强化学习功能。
+- `WP-01A` 已完成，冻结实现 Commit 为 `b7b48bb394bd4613652b4d1ff4158cb8503f52a5`。
+- 当前子工作包：`WP-01B`，只处理 Drifting Hotspot、Markov Switching 和 Burst Demand。
+- 当前第一阶段是 WP-01B 只读设计分析；设计审查通过前不得修改源码。
+- WP-01B 期间继续 CPU-only，不安装 PyTorch，不修改 CUDA、NVIDIA 驱动或服务器系统环境。
+- 不得提前实现 WP-01C、智能体环境、奖励、预测模型或强化学习功能。
 
 完整研究范围见 `docs/PROJECT_REQUIREMENTS.md` 和 `docs/RESEARCH_PLAN.md`；当前状态见 `docs/PROJECT_STATE.md`。
 
@@ -33,6 +35,7 @@
 8. 对类型、值域、维度和配置错误应抛出明确的 `TypeError` 或 `ValueError`。
 9. 不得静默截断数值、接受维度不匹配或原地修改调用方配置。
 10. 科学组件必须与策略、智能体状态、动作、奖励和模型参数解耦，除非后续工作包明确改变边界。
+11. WP-01B 必须复用 WP-01A 已冻结的数据模型、RNG 隔离和 `reset`/`step`/`generate` 状态语义；任何接口变更都必须先形成明确决策。
 
 ## 4. 修改边界与真实性
 
