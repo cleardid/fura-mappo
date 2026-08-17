@@ -1,0 +1,11 @@
+name: fura-mappo
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip>=24
+  - git
+  - numpy>=1.26,<3
+  - pyyaml>=6,<7
+  - pytest>=8,<10
+  - ruff>=0.8,<1
