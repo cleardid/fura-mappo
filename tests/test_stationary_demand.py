@@ -5,7 +5,36 @@ import random
 import numpy as np
 import pytest
 
+import fura_mappo.demand.processes as process_module
 from fura_mappo.demand import DemandStep, DemandTrace, StationaryPoissonDemand
+
+
+class _ResetProbe(StationaryPoissonDemand):
+    """仅用于验证 reset 钩子顺序和失败原子性的私有测试过程。"""
+
+    def __init__(self, seed: int) -> None:
+        self._hook_ready = False
+        self._hook_should_fail = False
+        self._hook_calls = 0
+        self._hook_order: list[str] | None = None
+        super().__init__(
+            seed=seed,
+            intensities=(1.5,),
+            zone_bounds=((0.0, 1.0, 0.0, 1.0),),
+            priority_range=(0.5, 0.5),
+            service_time_range=(1, 1),
+            deadline_offset_range=(1, 1),
+        )
+        self._hook_ready = True
+
+    def _reset_process_state(self) -> None:
+        if not self._hook_ready:
+            raise AssertionError("基类构造函数不得虚调用 reset 钩子")
+        self._hook_calls += 1
+        if self._hook_order is not None:
+            self._hook_order.append("hook")
+        if self._hook_should_fail:
+            raise RuntimeError("预期的 reset 钩子失败")
 
 
 def _process(
@@ -45,6 +74,65 @@ def _assert_numpy_random_states_equal(left: tuple[object, ...], right: tuple[obj
     assert left[0] == right[0]
     np.testing.assert_array_equal(left[1], right[1])
     assert left[2:] == right[2:]
+
+
+def test_base_constructor_does_not_virtual_call_reset_hook() -> None:
+    process = _ResetProbe(7)
+
+    assert process._hook_calls == 0
+
+
+def test_reset_creates_candidate_generator_before_calling_hook(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = _ResetProbe(7)
+    order: list[str] = []
+    original_factory = process_module.create_numpy_generator
+
+    def recording_factory(seed: int) -> np.random.Generator:
+        order.append("generator")
+        return original_factory(seed)
+
+    process._hook_order = order
+    monkeypatch.setattr(process_module, "create_numpy_generator", recording_factory)
+
+    process.reset(8)
+
+    assert order == ["generator", "hook"]
+
+
+def test_failed_reset_preserves_public_and_rng_state_and_can_continue() -> None:
+    process = _ResetProbe(19)
+    control = _ResetProbe(19)
+    _assert_traces_equal(process.generate(4), control.generate(4))
+    previous_rng = process._rng
+    previous_public_state = (
+        process.base_seed,
+        process.current_step,
+        process.next_event_id,
+    )
+    process._hook_should_fail = True
+
+    with pytest.raises(RuntimeError, match="预期的 reset 钩子失败"):
+        process.reset(999)
+
+    assert process._rng is previous_rng
+    assert (
+        process.base_seed,
+        process.current_step,
+        process.next_event_id,
+    ) == previous_public_state
+    process._hook_should_fail = False
+    _assert_steps_equal(process.step(), control.step())
+
+
+def test_invalid_reset_seed_is_rejected_before_hook() -> None:
+    process = _ResetProbe(7)
+
+    with pytest.raises(TypeError):
+        process.reset(True)
+
+    assert process._hook_calls == 0
 
 
 def test_process_is_ready_immediately_and_advances_public_state() -> None:

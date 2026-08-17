@@ -1,4 +1,4 @@
-"""需求过程公共状态接口和平稳 Poisson 实现。"""
+"""需求过程公共状态接口和共享 Poisson 事件生成层。"""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ import numpy.typing as npt
 from fura_mappo.demand.models import DemandEvent, DemandStep, DemandTrace, _contains_boolean
 from fura_mappo.utils.seeding import create_numpy_generator
 
+_POISSON_LIMIT = float(np.iinfo(np.int64).max) - 10.0 * math.sqrt(float(np.iinfo(np.int64).max))
+
 
 def _normalize_numeric_array(value: object, name: str, ndim: int) -> np.ndarray:
     """复制并规范化有限实数数组。"""
@@ -22,9 +24,7 @@ def _normalize_numeric_array(value: object, name: str, ndim: int) -> np.ndarray:
     array = np.asarray(value)
     if array.ndim != ndim:
         raise ValueError(f"{name} 必须是 {ndim} 维数组")
-    if np.issubdtype(array.dtype, np.bool_) or not np.issubdtype(array.dtype, np.number):
-        raise TypeError(f"{name} 必须包含实数")
-    if np.issubdtype(array.dtype, np.complexfloating):
+    if not (np.issubdtype(array.dtype, np.integer) or np.issubdtype(array.dtype, np.floating)):
         raise TypeError(f"{name} 必须包含实数")
 
     normalized = np.array(array, dtype=np.float64, copy=True)
@@ -44,7 +44,7 @@ def _normalize_real_range(value: object, name: str) -> tuple[float, float]:
 
     normalized: list[float] = []
     for item in items:
-        if isinstance(item, bool) or not isinstance(item, Real):
+        if isinstance(item, (bool, np.bool_)) or not isinstance(item, Real):
             raise TypeError(f"{name} 必须包含实数且不能包含布尔值")
         number = float(item)
         if not math.isfinite(number):
@@ -64,10 +64,76 @@ def _normalize_integer_range(value: object, name: str) -> tuple[int, int]:
 
     normalized: list[int] = []
     for item in items:
-        if isinstance(item, bool) or not isinstance(item, (int, np.integer)):
+        if isinstance(item, (bool, np.bool_)) or not isinstance(item, (int, np.integer)):
             raise TypeError(f"{name} 必须包含整数且不能包含布尔值")
         normalized.append(int(item))
     return normalized[0], normalized[1]
+
+
+def _normalize_intensity_vector(
+    value: object,
+    name: str,
+    num_zones: int | None = None,
+) -> np.ndarray:
+    """验证逐区域 Poisson 强度并返回可写的 ``float64`` 副本。"""
+
+    normalized = _normalize_numeric_array(value, name, 1)
+    if normalized.size < 1:
+        raise ValueError(f"{name} 必须至少包含一个区域")
+    if num_zones is not None and normalized.shape != (num_zones,):
+        raise ValueError(f"{name} 形状必须为 [num_zones] 并匹配 zone_bounds")
+    if np.any(normalized < 0.0):
+        raise ValueError(f"{name} 必须全部非负")
+    if np.any(normalized > _POISSON_LIMIT):
+        raise ValueError(f"{name} 超出 NumPy Poisson 采样的安全范围")
+    return normalized
+
+
+def _normalize_zone_bounds(
+    value: object,
+    num_zones: int,
+    reference_name: str,
+) -> np.ndarray:
+    """验证矩形区域边界并返回可写的 ``float64`` 副本。"""
+
+    normalized = _normalize_numeric_array(value, "zone_bounds", 2)
+    if normalized.shape != (num_zones, 4):
+        raise ValueError(f"zone_bounds 形状必须为 [num_zones, 4] 并匹配 {reference_name}")
+    if np.any(normalized[:, 0] >= normalized[:, 1]):
+        raise ValueError("zone_bounds 必须满足 x_min < x_max")
+    if np.any(normalized[:, 2] >= normalized[:, 3]):
+        raise ValueError("zone_bounds 必须满足 y_min < y_max")
+    with np.errstate(over="ignore"):
+        widths = normalized[:, 1] - normalized[:, 0]
+        heights = normalized[:, 3] - normalized[:, 2]
+    if not np.all(np.isfinite(widths)) or not np.all(np.isfinite(heights)):
+        raise ValueError("zone_bounds 的坐标跨度必须为有限值")
+    return normalized
+
+
+def _normalize_common_ranges(
+    priority_range: object,
+    service_time_range: object,
+    deadline_offset_range: object,
+) -> tuple[tuple[float, float], tuple[int, int], tuple[int, int]]:
+    """验证所有需求过程共享的任务属性范围。"""
+
+    normalized_priority = _normalize_real_range(priority_range, "priority_range")
+    if not 0.0 <= normalized_priority[0] <= normalized_priority[1] <= 1.0:
+        raise ValueError("priority_range 必须满足 0.0 <= low <= high <= 1.0")
+
+    normalized_service = _normalize_integer_range(service_time_range, "service_time_range")
+    normalized_deadline = _normalize_integer_range(deadline_offset_range, "deadline_offset_range")
+    max_integer = int(np.iinfo(np.int64).max)
+    for name, bounds in (
+        ("service_time_range", normalized_service),
+        ("deadline_offset_range", normalized_deadline),
+    ):
+        if not 1 <= bounds[0] <= bounds[1]:
+            raise ValueError(f"{name} 必须满足 1 <= low <= high")
+        if bounds[1] > max_integer:
+            raise ValueError(f"{name} 上界不能超过 int64 最大值")
+    return normalized_priority, normalized_service, normalized_deadline
 
 
 class DemandProcess(ABC):
@@ -101,16 +167,18 @@ class DemandProcess(ABC):
         return self._next_event_id
 
     def reset(self, seed: int | None = None) -> None:
-        """重建独立 Generator，并将时间步和事件编号重置为零。
+        """原子地重建独立 Generator、过程隐状态和公共计数器。
 
         Args:
             seed: 新基准种子；为 ``None`` 时复用当前基准种子。
         """
 
-        base_seed = self._base_seed if seed is None else seed
-        rng = create_numpy_generator(base_seed)
-        self._base_seed = int(base_seed)
-        self._rng = rng
+        candidate_seed = self._base_seed if seed is None else seed
+        candidate_rng = create_numpy_generator(candidate_seed)
+        self._reset_process_state()
+
+        self._base_seed = int(candidate_seed)
+        self._rng = candidate_rng
         self._current_step = 0
         self._next_event_id = 0
 
@@ -147,7 +215,7 @@ class DemandProcess(ABC):
             ValueError: ``num_steps`` 不是正数时抛出。
         """
 
-        if isinstance(num_steps, bool) or not isinstance(num_steps, (int, np.integer)):
+        if isinstance(num_steps, (bool, np.bool_)) or not isinstance(num_steps, (int, np.integer)):
             raise TypeError("num_steps 必须是整数且不能是布尔值")
         normalized_num_steps = int(num_steps)
         if normalized_num_steps <= 0:
@@ -167,92 +235,58 @@ class DemandProcess(ABC):
             events=events,
         )
 
+    def _reset_process_state(self) -> None:
+        """从不可变初始配置重建子类隐状态；无隐状态时为空操作。"""
+
+        return None
+
     @abstractmethod
     def _sample_step(self, step: int, first_event_id: int) -> DemandStep:
         """采样一个时间步，但不修改公共时间和事件编号状态。"""
 
 
-class StationaryPoissonDemand(DemandProcess):
-    """在固定矩形区域中生成平稳 Poisson 外生需求。"""
+class _PoissonDemandProcess(DemandProcess):
+    """复用逐区域 Poisson 计数和任务事件创建逻辑的内部基类。"""
 
     def __init__(
         self,
         *,
         seed: int,
-        intensities: npt.ArrayLike,
+        num_zones: int,
         zone_bounds: npt.ArrayLike,
         priority_range: Sequence[float],
         service_time_range: Sequence[int],
         deadline_offset_range: Sequence[int],
+        zone_reference_name: str,
     ) -> None:
-        """验证配置并创建平稳 Poisson 需求过程。
-
-        Args:
-            seed: 非负整数随机种子。
-            intensities: 逐区域 Poisson 强度，形状 ``[num_zones]``，保存为
-                ``float64``。
-            zone_bounds: 区域边界，形状 ``[num_zones, 4]``，每行为
-                ``(x_min, x_max, y_min, y_max)``，保存为 ``float64``。
-            priority_range: 连续均匀优先级的闭区间配置。
-            service_time_range: 离散均匀服务时长的闭区间配置。
-            deadline_offset_range: 离散均匀截止偏移的闭区间配置。
-        """
-
-        normalized_intensities = _normalize_numeric_array(intensities, "intensities", 1)
-        if normalized_intensities.size < 1:
-            raise ValueError("intensities 必须至少包含一个区域")
-        if np.any(normalized_intensities < 0.0):
-            raise ValueError("intensities 必须全部非负")
-        poisson_limit = float(np.iinfo(np.int64).max) - 10.0 * math.sqrt(
-            float(np.iinfo(np.int64).max)
+        normalized_bounds = _normalize_zone_bounds(zone_bounds, num_zones, zone_reference_name)
+        normalized_priority, normalized_service, normalized_deadline = _normalize_common_ranges(
+            priority_range,
+            service_time_range,
+            deadline_offset_range,
         )
-        if np.any(normalized_intensities > poisson_limit):
-            raise ValueError("intensities 超出 NumPy Poisson 采样的安全范围")
 
-        normalized_bounds = _normalize_numeric_array(zone_bounds, "zone_bounds", 2)
-        if normalized_bounds.shape != (normalized_intensities.size, 4):
-            raise ValueError("zone_bounds 形状必须为 [num_zones, 4] 并匹配 intensities")
-        if np.any(normalized_bounds[:, 0] >= normalized_bounds[:, 1]):
-            raise ValueError("zone_bounds 必须满足 x_min < x_max")
-        if np.any(normalized_bounds[:, 2] >= normalized_bounds[:, 3]):
-            raise ValueError("zone_bounds 必须满足 y_min < y_max")
-        with np.errstate(over="ignore"):
-            widths = normalized_bounds[:, 1] - normalized_bounds[:, 0]
-            heights = normalized_bounds[:, 3] - normalized_bounds[:, 2]
-        if not np.all(np.isfinite(widths)) or not np.all(np.isfinite(heights)):
-            raise ValueError("zone_bounds 的坐标跨度必须为有限值")
-
-        normalized_priority = _normalize_real_range(priority_range, "priority_range")
-        if not 0.0 <= normalized_priority[0] <= normalized_priority[1] <= 1.0:
-            raise ValueError("priority_range 必须满足 0.0 <= low <= high <= 1.0")
-
-        normalized_service = _normalize_integer_range(service_time_range, "service_time_range")
-        normalized_deadline = _normalize_integer_range(
-            deadline_offset_range, "deadline_offset_range"
-        )
-        max_integer = int(np.iinfo(np.int64).max)
-        for name, bounds in (
-            ("service_time_range", normalized_service),
-            ("deadline_offset_range", normalized_deadline),
-        ):
-            if not 1 <= bounds[0] <= bounds[1]:
-                raise ValueError(f"{name} 必须满足 1 <= low <= high")
-            if bounds[1] > max_integer:
-                raise ValueError(f"{name} 上界不能超过 int64 最大值")
-
-        normalized_intensities.setflags(write=False)
         normalized_bounds.setflags(write=False)
-        self._intensities = normalized_intensities
         self._zone_bounds = normalized_bounds
         self._priority_range = normalized_priority
         self._service_time_range = normalized_service
         self._deadline_offset_range = normalized_deadline
         super().__init__(seed)
 
-    def _sample_step(self, step: int, first_event_id: int) -> DemandStep:
-        """使用实例私有 Generator 采样一个平稳需求时间步。"""
+    def _build_demand_step(
+        self,
+        step: int,
+        first_event_id: int,
+        intensities: npt.ArrayLike,
+    ) -> DemandStep:
+        """按给定 ``float64[num_zones]`` 强度构造完整需求时间步。"""
 
-        counts = np.asarray(self._rng.poisson(self._intensities), dtype=np.int64)
+        normalized_intensities = _normalize_intensity_vector(
+            intensities,
+            "intensities",
+            self._zone_bounds.shape[0],
+        )
+        counts = np.asarray(self._rng.poisson(normalized_intensities), dtype=np.int64)
         events: list[DemandEvent] = []
         next_event_id = first_event_id
 
@@ -296,7 +330,7 @@ class StationaryPoissonDemand(DemandProcess):
 
         return DemandStep(
             step=step,
-            intensity=self._intensities,
+            intensity=normalized_intensities,
             counts=counts,
             events=tuple(events),
         )
@@ -308,3 +342,48 @@ class StationaryPoissonDemand(DemandProcess):
         if low == high:
             return np.full(size, low, dtype=np.int64)
         return self._rng.integers(low, high, size=size, dtype=np.int64, endpoint=True)
+
+
+class StationaryPoissonDemand(_PoissonDemandProcess):
+    """在固定矩形区域中生成平稳 Poisson 外生需求。"""
+
+    def __init__(
+        self,
+        *,
+        seed: int,
+        intensities: npt.ArrayLike,
+        zone_bounds: npt.ArrayLike,
+        priority_range: Sequence[float],
+        service_time_range: Sequence[int],
+        deadline_offset_range: Sequence[int],
+    ) -> None:
+        """验证配置并创建平稳 Poisson 需求过程。
+
+        Args:
+            seed: 非负整数随机种子。
+            intensities: 逐区域 Poisson 强度，形状 ``[num_zones]``，保存为
+                ``float64``。
+            zone_bounds: 区域边界，形状 ``[num_zones, 4]``，每行为
+                ``(x_min, x_max, y_min, y_max)``，保存为 ``float64``。
+            priority_range: 连续均匀优先级的闭区间配置。
+            service_time_range: 离散均匀服务时长的闭区间配置。
+            deadline_offset_range: 离散均匀截止偏移的闭区间配置。
+        """
+
+        normalized_intensities = _normalize_intensity_vector(intensities, "intensities")
+        normalized_intensities.setflags(write=False)
+        self._intensities = normalized_intensities
+        super().__init__(
+            seed=seed,
+            num_zones=normalized_intensities.size,
+            zone_bounds=zone_bounds,
+            priority_range=priority_range,
+            service_time_range=service_time_range,
+            deadline_offset_range=deadline_offset_range,
+            zone_reference_name="intensities",
+        )
+
+    def _sample_step(self, step: int, first_event_id: int) -> DemandStep:
+        """使用实例私有 Generator 采样一个平稳需求时间步。"""
+
+        return self._build_demand_step(step, first_event_id, self._intensities)
