@@ -195,3 +195,13 @@
 - 非范围：WP-02A 不定义 reward，不包含 RL、Reactive 或 Oracle。
 - 证据：最终批准 patch SHA-256 为 `74b74cd9590eea1498152a81dc747cadf676d66890516c6460c07c819cd49e81`；v2 独立复核 BLOCKER 0、MAJOR 0、MINOR 0；Mac、GitHub Actions `CPU checks` 与 A100 验收通过。
 - 后续约束：下一唯一阶段为 WP-02B Reactive baseline 只读设计；不得提前实现 WP-02B 或进入 Oracle、H1 正式门槛实验、预测与 MAPPO。
+
+## D-033：冻结 WP-02B Reactive baseline 与共享 movement feasibility
+
+- 状态：已接受
+- 决策：Reactive 是 centralized、stateless、current-state-only 的 deterministic baseline；只动态消费当前 `EnvironmentSnapshot`，只额外持有 `movement_speed`，不访问 future demand、intensity 或 hidden demand state。
+- 状态边界：controller 不拥有 RNG、history、movement target 或 task reservation；每个 step 依据当前 snapshot 重新规划。
+- 物理边界：Reactive exact movement feasibility 必须复用 WP-02A 唯一的内部 single-slot movement primitive；`ceil(distance / speed)` 不作为 exact travel truth。该 primitive 是对 WP-02A 原算法的机械抽取，WP-02A 公共环境行为不变。
+- 稳定实现：WP-02B 实现 Commit 为 `f290a45a67763b41941e919303b26fb16a67575a`。
+- 证据：最终批准 patch SHA-256 为 `38648aac6ae7d92766244ee2d226cc2a32a4a6d2337b8a039432f0daaadf191f`；独立审查 BLOCKER 0、MAJOR 0、MINOR 0；Mac、GitHub Actions `CPU checks` 与 A100 CPU 验收通过。
+- Oracle 边界：未来 Oracle 必须保持 WP-02A environment physics 与 movement feasibility，但不要求复用 Reactive 的完整 greedy planning；Oracle 的 information set、horizon 和 future planning 留待 WP-02C 独立只读设计，不在本决策中提前冻结。

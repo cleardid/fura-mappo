@@ -13,7 +13,7 @@
 
 ## 当前工作包
 
-WP-02B Reactive baseline，只读设计分析。WP-02B 尚不得实现。
+WP-02C True-future Oracle，只读设计分析。WP-02C 尚不得实现。
 
 优先读取：
 
@@ -23,9 +23,17 @@ WP-02B Reactive baseline，只读设计分析。WP-02B 尚不得实现。
 - `docs/ANALYSIS_PLAN.md`
 - `docs/DECISIONS.md`
 - `docs/WP02A_SPEC.md`
+- `docs/WP02B_SPEC.md`
+- `CHANGELOG_WP02B.md`
 - `src/fura_mappo/envs/`
+- `src/fura_mappo/baselines/`
 
 ## WP-02 完成文档
+
+### WP-02B
+
+- `docs/WP02B_SPEC.md`
+- `CHANGELOG_WP02B.md`
 
 ### WP-02A
 

@@ -1,7 +1,7 @@
 # FURA-MAPPO 研究计划
 
-WP-01 外生需求生成系统与 WP-02A 确定性资源服务环境已完成；当前唯一阶段为
-WP-02B Reactive baseline 的只读设计。
+WP-01 外生需求生成系统、WP-02A 确定性资源服务环境与 WP-02B Reactive baseline
+已完成；当前唯一阶段为 WP-02C True-future Oracle 的只读设计分析。
 
 ## 核心假设
 
@@ -31,16 +31,27 @@ WP-02A 已冻结仅消费 `DemandTrace` 的 deterministic `ResourceServiceEnviro
 
 稳定实现：`d01092831a227a9f520de4ff8ded1d9e13ba8262`。
 
-### Reactive baseline——当前只读设计
+### Reactive baseline——已完成
 
-WP-02B 先冻结当前信息集、controller/environment 边界、feasibility、确定性 dispatch
-与 tie-breaking、current waiting task selection、paired rollout 接口，以及禁止访问
-future demand、intensity 和 hidden state 的边界。设计确认前不得实现。
+WP-02B 已冻结 centralized、current-state-only、stateless、RNG-free、reservation-free
+的 deterministic `ReactiveController`。它只动态消费当前 `EnvironmentSnapshot`，只额外
+持有 `movement_speed`；exact bounded travel feasibility 与环境复用唯一 single-slot
+movement primitive，不以 `ceil(distance / speed)` 作为 exact physical truth。任务和资源
+均使用冻结的确定性排序与 unique greedy matching，直接输出 WP-02A actions 并使用
+`EpisodeMetrics`。
 
-### 后续基线
+稳定实现：`f290a45a67763b41941e919303b26fb16a67575a`。
 
-WP-02B 完成后才单独处理 True-future Oracle；Reactive 与未来 Oracle 必须复用同一
-环境动力学。Oracle 与 Reactive 就绪后才验证 H1，门槛成立后再进入预测与 MAPPO。
+### True-future Oracle——当前只读设计
+
+WP-02C 必须先冻结 Oracle 精确信息集、True-future view 边界、horizon H 与 H=0、future
+event 可见/不可见字段、pre-position action、current/future task 规划关系、receding-horizon
+行为、reservation/plan state、与 WP-02A physics 的隔离、H=0 对 Reactive 的零差异控制、
+防止弱 Oracle 造成 H1 false negative 的 verifier 策略、文件与测试范围，以及 WP-02D H1
+gate 所需接口边界。
+
+WP-02C 当前不得实现 Oracle。Reactive 与未来 Oracle 必须复用同一环境动力学；两者就绪后
+才在 WP-02D 验证 H1，门槛成立后再进入预测与 MAPPO。
 
 ### 预测与决策
 后续分别冻结预测接口、预测基线和不确定性感知 MAPPO。
@@ -60,13 +71,13 @@ WP-02B 完成后才单独处理 True-future Oracle；Reactive 与未来 Oracle �
 2. 已完成 WP-01B
 3. 已完成 WP-01C
 4. 已完成 WP-02A 确定性资源服务环境
-5. 当前：WP-02B Reactive baseline 只读设计
-6. 后续：True-future Oracle
+5. 已完成 WP-02B Reactive baseline
+6. 当前：WP-02C True-future Oracle 只读设计分析
 7. H1 正式门槛验证
 8. 预测接口与预测基线
 9. 不确定性感知 MAPPO
 10. ID/OOD、消融和相图
 11. 最终统计分析与论文结果
 
-当前不得提前进入 WP-02B 实现、Oracle、H1 正式门槛实验、预测、MAPPO 或
-PyTorch/GPU。
+当前不得提前进入 WP-02C 实现、H1 正式门槛运行、predictor、uncertainty、MAPPO、
+PyTorch/GPU、ID/OOD 主实验或大规模 optimizer。
