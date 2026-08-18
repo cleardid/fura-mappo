@@ -121,7 +121,7 @@ def create_demand_process(config: Mapping[str, object]) -> DemandProcess:
             **common,
             intensities=cast(npt.ArrayLike, config["intensities"]),
         )
-    if process_type == "drifting_hotspot":
+    elif process_type == "drifting_hotspot":
         return DriftingHotspotDemand(
             **common,
             base_intensities=cast(npt.ArrayLike, config["base_intensities"]),
@@ -130,18 +130,20 @@ def create_demand_process(config: Mapping[str, object]) -> DemandProcess:
             initial_hotspot_positions=cast(npt.ArrayLike, config["initial_hotspot_positions"]),
             hotspot_velocities=cast(npt.ArrayLike, config["hotspot_velocities"]),
         )
-    if process_type == "markov_switching":
+    elif process_type == "markov_switching":
         return MarkovSwitchingDemand(
             **common,
             state_intensities=cast(npt.ArrayLike, config["state_intensities"]),
             transition_matrix=cast(npt.ArrayLike, config["transition_matrix"]),
             initial_state=cast(int, config["initial_state"]),
         )
-    return BurstDemand(
-        **common,
-        base_intensities=cast(npt.ArrayLike, config["base_intensities"]),
-        burst_probability=cast(float, config["burst_probability"]),
-        burst_duration_range=cast(Sequence[int], config["burst_duration_range"]),
-        burst_amplitude_range=cast(Sequence[float], config["burst_amplitude_range"]),
-        burst_zone_weights=cast(npt.ArrayLike, config["burst_zone_weights"]),
-    )
+    elif process_type == "burst":
+        return BurstDemand(
+            **common,
+            base_intensities=cast(npt.ArrayLike, config["base_intensities"]),
+            burst_probability=cast(float, config["burst_probability"]),
+            burst_duration_range=cast(Sequence[int], config["burst_duration_range"]),
+            burst_amplitude_range=cast(Sequence[float], config["burst_amplitude_range"]),
+            burst_zone_weights=cast(npt.ArrayLike, config["burst_zone_weights"]),
+        )
+    raise RuntimeError("内部工厂 schema 与分发不一致")

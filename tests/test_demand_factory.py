@@ -5,6 +5,7 @@ from types import MappingProxyType
 import numpy as np
 import pytest
 
+import fura_mappo.demand.factory as factory_module
 from fura_mappo.demand import (
     BurstDemand,
     DriftingHotspotDemand,
@@ -279,3 +280,16 @@ def test_mutating_factory_config_after_construction_cannot_change_instance(
     np.testing.assert_array_equal(produced.counts, expected.counts)
     np.testing.assert_array_equal(produced.intensities, expected.intensities)
     assert produced.events == expected.events
+
+
+def test_factory_schema_dispatch_mismatch_raises_internal_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = _config()
+    config["type"] = "orphan"
+    schemas = dict(factory_module._PROCESS_SCHEMAS)
+    schemas["orphan"] = schemas["stationary_poisson"]
+    monkeypatch.setattr(factory_module, "_PROCESS_SCHEMAS", MappingProxyType(schemas))
+
+    with pytest.raises(RuntimeError, match="schema 与分发不一致"):
+        create_demand_process(config)

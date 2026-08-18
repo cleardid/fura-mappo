@@ -1,0 +1,14 @@
+schema: fura-mappo.demand-generation
+version: 1
+demand:
+  type: stationary_poisson
+  seed: 20260818
+  intensities: [0.5, 1.0]
+  zone_bounds:
+    - [0.0, 1.0, 0.0, 1.0]
+    - [1.0, 2.0, 0.0, 1.0]
+  priority_range: [0.2, 0.8]
+  service_time_range: [1, 4]
+  deadline_offset_range: [2, 6]
+generation:
+  num_steps: 5

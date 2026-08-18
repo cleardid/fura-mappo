@@ -1,22 +1,15 @@
 # 配置目录
 
-本目录用于后续可复现实验配置。
+WP-01C 提供四个小型需求生成示例：
 
-当前状态：
+- `demand/stationary_poisson.yaml`；
+- `demand/drifting_hotspot.yaml`；
+- `demand/markov_switching.yaml`；
+- `demand/burst.yaml`。
 
-- WP-01A 和 WP-01B 已完成；四类需求过程当前只接受内存 `Mapping` 配置或显式构造参数；
-- 当前进入 WP-01C 只读设计分析；
-- 在设计审查通过前，不新增正式 YAML 配置、加载器、路径约定或 CLI 覆盖规则。
+这些文件均使用 `fura-mappo.demand-generation` schema v1，可直接交给
+`load_demand_config()`、内存工厂或 `fura-demand generate`。示例只用于接口演示和快速
+CPU 验证，不代表正式 ID/OOD 参数边界，也不支持 include、继承、环境变量或路径字段。
 
-WP-01C 必须先冻结安全加载、schema/version、相对路径、CLI 覆盖、未知字段、输出覆盖、完整解析配置、seed、Commit 和配置哈希的语义。候选目录结构如下，但目录和字段只有在设计审查后才能冻结：
-
-```text
-configs/
-├── demand/
-├── env/
-├── forecast/
-├── algo/
-└── experiment/
-```
-
-所有正式实验必须保存解析后的完整配置、随机种子和 Git Commit。大型生成数据、日志和模型不得提交 GitHub。
+正式训练、开发和 OOD 实验配置将在后续实验工作包中预先冻结；大型轨迹、日志和模型
+不得提交 GitHub。完整协议见 `docs/WP01C_SPEC.md`。
