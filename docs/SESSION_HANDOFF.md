@@ -1,49 +1,56 @@
 # 会话交接
 
-更新日期：2026-08-18
+更新日期：2026-08-19
 
 ## 当前任务
 
-WP-02：资源服务环境与反应式/Oracle 控制基线。
+WP-02B：Reactive baseline。
 
-当前阶段严格为只读设计分析。
+当前阶段严格为只读设计分析，尚不得实现。
 
 ## 稳定基线
 
 ```text
+WP-02A 实现：d01092831a227a9f520de4ff8ded1d9e13ba8262
 WP-01C 实现：29a042f7b9fc80d3356cd5c63df1cd26b4078d9b
-标签：wp01c-stable
+WP-01C 标签：wp01c-stable
 ```
 
-当前 docs-only HEAD 必须由下一会话真实读取，不预设 SHA。
+WP-02A docs-only 收尾 Commit 不自引用自身 SHA；后续会话必须真实读取当前 HEAD。
 
-## WP-01C 完成结论
+## WP-02A 完成结论
 
-- YAML/config hash/NPZ artifact/CLI/summary 已实现并冻结
-- Mac 421 passed
-- GitHub Actions run #7 success
-- A100 421 passed
-- WP-01 接口和文件协议视为冻结
+- deterministic `ResourceServiceEnvironment` 已实现并冻结，只消费 `DemandTrace`
+- 连续二维欧氏移动、同质资源、精确位置服务、Move/Serve slot 互斥、非抢占服务
+- completion → expiration → truncation；canonical `resource_to_event`
+- 事务式 `reset` / `step`、future Serve side-channel 隔离、确定性 duplicate resolution
+- 组成指标及精确守恒检查；没有 reward、RL、Reactive 或 Oracle
+- 最终批准 patch SHA-256：`74b74cd9590eea1498152a81dc747cadf676d66890516c6460c07c819cd49e81`
+- 第一轮独立审查的移动浮点收缩 MAJOR 与超大有限实数 `OverflowError` MINOR 均已修复
+- v2 独立复核：BLOCKER 0、MAJOR 0、MINOR 0
+- Mac Python 3.11.15：专项 55 passed，全量 476 passed，Ruff / format / diff-check 通过
+- GitHub Actions `CPU checks`：success；未记录未经确认的 run number
+- A100：指定 Commit、Python 3.11.15、Conda `fura-mappo`；专项 55 passed in 0.26s，全量 476 passed in 17.45s；Ruff 通过，64 files already formatted，最终工作树干净
 
-## WP-02 只读分析必须解决
+## A100 依赖重装说明
 
-1. DemandStep/DemandTrace 如何进入环境
-2. 时间步内 arrival/observe/action/move/service/complete/deadline/metric 顺序
-3. 资源数量、容量、位置和可用性
-4. 连续二维 vs zone-level 位置抽象
-5. 移动速度/耗时/成本
-6. service_time、并发和完成规则
-7. queue、deadline miss、丢弃
-8. 冲突和 tie-breaking
-9. episode/reset
-10. observation/action，但不实现 RL
-11. 组成指标，不冻结最终 reward
-12. Reactive baseline
-13. Oracle horizon 与信息边界
-14. 配对 DemandTrace/artifact
-15. H1 门槛实验
-16. WP-02 子工作包拆分
+`python -m pip install -e ".[dev]"` 因 build isolation 尝试经失效代理
+`127.0.0.1:17890` 获取 `setuptools>=69` 而失败。这是依赖重装步骤的网络/代理
+失败，不能记作成功；未因此修改依赖或环境配置。随后现有 Conda 环境的 pip
+dependency check 为 `No broken requirements found`，专项和完整 CPU 验收均通过。
+
+## WP-02B 只读设计必须冻结
+
+1. Reactive controller 的当前信息集
+2. controller/environment 边界
+3. feasibility 计算
+4. deterministic dispatch / tie-breaking
+5. current waiting task selection
+6. paired rollout 接口需求
+7. Reactive 不得访问 future demand、intensity 或 hidden state
+8. 与未来 Oracle 共用环境动力学的边界
 
 ## 非目标
 
-预测器、不确定性模型、MAPPO、PyTorch/GPU、正式 ID/OOD 主实验、最终 reward、大规模优化器、多进程。
+WP-02B 实现、Oracle、H1 正式门槛实验、预测、不确定性模型、MAPPO、
+PyTorch/GPU、正式 ID/OOD 主实验、最终 reward、大规模优化器、多进程。

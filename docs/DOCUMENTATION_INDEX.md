@@ -13,7 +13,7 @@
 
 ## 当前工作包
 
-WP-02，只读设计分析。
+WP-02B Reactive baseline，只读设计分析。WP-02B 尚不得实现。
 
 优先读取：
 
@@ -22,8 +22,15 @@ WP-02，只读设计分析。
 - `docs/RESEARCH_PLAN.md`
 - `docs/ANALYSIS_PLAN.md`
 - `docs/DECISIONS.md`
-- `docs/WP01C_SPEC.md`
-- `src/fura_mappo/demand/`
+- `docs/WP02A_SPEC.md`
+- `src/fura_mappo/envs/`
+
+## WP-02 完成文档
+
+### WP-02A
+
+- `docs/WP02A_SPEC.md`
+- `CHANGELOG_WP02A.md`
 
 ## WP-01 完成文档
 

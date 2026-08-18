@@ -186,3 +186,12 @@
 - 状态：已接受
 - 决策：WP-02 在实现前必须只读分析并冻结环境时间步、服务/移动语义、组成指标、反应式信息集和 Oracle 未来信息窗口；不得先实现最终 RL reward 或 MAPPO。
 - 原因：H1 的 Oracle 价值门槛必须在可解释、固定的环境机制下验证。
+
+## D-032：冻结 WP-02A 环境语义与稳定实现基线
+
+- 状态：已接受
+- 决策：WP-02A 的确定性资源服务环境语义已经冻结；稳定实现 Commit 为 `d01092831a227a9f520de4ff8ded1d9e13ba8262`。
+- 冻结边界：环境仅消费 `DemandTrace`，采用连续二维欧氏移动、同质资源、精确位置服务、Move/Serve slot 互斥、非抢占服务、completion → expiration → truncation 边界顺序、canonical `resource_to_event`、事务式 `reset` / `step`、future Serve side-channel 隔离、确定性 duplicate assignment resolution，以及组成指标和精确守恒检查。
+- 非范围：WP-02A 不定义 reward，不包含 RL、Reactive 或 Oracle。
+- 证据：最终批准 patch SHA-256 为 `74b74cd9590eea1498152a81dc747cadf676d66890516c6460c07c819cd49e81`；v2 独立复核 BLOCKER 0、MAJOR 0、MINOR 0；Mac、GitHub Actions `CPU checks` 与 A100 验收通过。
+- 后续约束：下一唯一阶段为 WP-02B Reactive baseline 只读设计；不得提前实现 WP-02B 或进入 Oracle、H1 正式门槛实验、预测与 MAPPO。

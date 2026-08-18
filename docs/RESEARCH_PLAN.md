@@ -1,6 +1,7 @@
 # FURA-MAPPO 研究计划
 
-WP-01 外生需求生成系统已完成；当前进入 WP-02 资源服务环境与反应式/Oracle 控制基线。
+WP-01 外生需求生成系统与 WP-02A 确定性资源服务环境已完成；当前唯一阶段为
+WP-02B Reactive baseline 的只读设计。
 
 ## 核心假设
 
@@ -22,11 +23,24 @@ WP-01 外生需求生成系统已完成；当前进入 WP-02 资源服务环境�
 四类过程、YAML、hash、artifact、CLI、summary 已冻结。
 稳定实现：`29a042f7b9fc80d3356cd5c63df1cd26b4078d9b` / `wp01c-stable`。
 
-### 资源服务环境——当前
-需要冻结位置、移动、容量、服务、deadline、冲突、episode、观察/动作和组成指标。
+### 资源服务环境——已完成
 
-### 基线
-优先完成 Reactive 与 True-future Oracle，并验证 H1。Oracle 门槛成立后再进入预测与 MAPPO。
+WP-02A 已冻结仅消费 `DemandTrace` 的 deterministic `ResourceServiceEnvironment`、
+连续二维欧氏移动、同质资源、精确位置与非抢占服务、事务式环境转换、确定性冲突
+处理、future Serve 隔离、组成指标和精确守恒检查。
+
+稳定实现：`d01092831a227a9f520de4ff8ded1d9e13ba8262`。
+
+### Reactive baseline——当前只读设计
+
+WP-02B 先冻结当前信息集、controller/environment 边界、feasibility、确定性 dispatch
+与 tie-breaking、current waiting task selection、paired rollout 接口，以及禁止访问
+future demand、intensity 和 hidden state 的边界。设计确认前不得实现。
+
+### 后续基线
+
+WP-02B 完成后才单独处理 True-future Oracle；Reactive 与未来 Oracle 必须复用同一
+环境动力学。Oracle 与 Reactive 就绪后才验证 H1，门槛成立后再进入预测与 MAPPO。
 
 ### 预测与决策
 后续分别冻结预测接口、预测基线和不确定性感知 MAPPO。
@@ -45,9 +59,14 @@ WP-01 外生需求生成系统已完成；当前进入 WP-02 资源服务环境�
 1. 已完成 WP-01A
 2. 已完成 WP-01B
 3. 已完成 WP-01C
-4. 当前：WP-02 环境与 Reactive/Oracle
-5. H1 门槛验证
-6. 预测接口与预测基线
-7. 不确定性感知 MAPPO
-8. ID/OOD、消融和相图
-9. 最终统计分析与论文结果
+4. 已完成 WP-02A 确定性资源服务环境
+5. 当前：WP-02B Reactive baseline 只读设计
+6. 后续：True-future Oracle
+7. H1 正式门槛验证
+8. 预测接口与预测基线
+9. 不确定性感知 MAPPO
+10. ID/OOD、消融和相图
+11. 最终统计分析与论文结果
+
+当前不得提前进入 WP-02B 实现、Oracle、H1 正式门槛实验、预测、MAPPO 或
+PyTorch/GPU。
