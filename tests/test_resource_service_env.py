@@ -18,6 +18,7 @@ from fura_mappo.envs import (
     ServeAction,
     TaskStatus,
 )
+from fura_mappo.envs._movement import _calculate_single_slot_move
 
 
 def _event(
@@ -643,3 +644,52 @@ def test_environment_is_deterministic_and_does_not_pollute_global_rng() -> None:
     assert first_results == second_results
     _assert_numpy_states_equal(numpy_state, np.random.get_state())
     assert python_state == random.getstate()
+
+
+@pytest.mark.parametrize(
+    ("current", "target", "speed"),
+    [
+        ((0.0, 0.0), (2.0, 0.0), 1.0),
+        ((0.0, 0.0), (1.0, 0.0), 1.0),
+        ((1.0, 1.0), (1.0, 1.0), 1.0),
+        (
+            (-0.6475645430192594, -0.5360862663609285),
+            (-0.5333278326382778, -0.030074539317286764),
+            0.1,
+        ),
+    ],
+)
+def test_environment_move_wrapper_matches_shared_primitive(
+    current: tuple[float, float],
+    target: tuple[float, float],
+    speed: float,
+) -> None:
+    env = _env(positions=(current,), speed=speed)
+
+    shared = _calculate_single_slot_move(current, target, speed)
+    wrapped = env._calculate_move(current, target)
+
+    assert wrapped == shared
+    assert wrapped.distance <= speed
+    if math.hypot(target[0] - current[0], target[1] - current[1]) <= speed:
+        assert wrapped.position is target
+
+
+@pytest.mark.parametrize(
+    ("current", "target", "speed"),
+    [
+        ((-1e308, 0.0), (1e308, 0.0), 1.0),
+        ((1e308, 0.0), (math.nextafter(1e308, math.inf), 0.0), 1.0),
+    ],
+)
+def test_environment_move_wrapper_preserves_shared_exception_type_and_message(
+    current: tuple[float, float],
+    target: tuple[float, float],
+    speed: float,
+) -> None:
+    env = _env(positions=(current,), speed=speed)
+
+    shared = _exception_signature(lambda: _calculate_single_slot_move(current, target, speed))
+    wrapped = _exception_signature(lambda: env._calculate_move(current, target))
+
+    assert wrapped == shared
