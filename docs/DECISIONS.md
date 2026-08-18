@@ -32,17 +32,19 @@
 ## D-006：采用单一 main 分支开发
 
 - 状态：已接受
-- 决策：不创建功能分支、额外 worktree 或必需 Pull Request。
+- 决策：项目只使用 `main` 分支开发，不创建功能分支、额外 worktree 或 Pull Request。
+- 原因：保持 Mac、GitHub 和 A100 服务器之间的交付路径单一且可追溯。
 
 ## D-007：Codex 不执行版本发布操作
 
 - 状态：已接受
-- 决策：Codex 不得执行 Commit、Tag、Push、Merge、Rebase 或其他 Git 历史写操作。
+- 决策：Codex 只负责修改和测试文件，不得执行 Commit、Tag 或 Push，也不得执行任何分支操作。
+- 原因：版本历史和远程发布由用户手工确认并控制。
 
-## D-008：使用 candidate 标签进行推送 main 前验收
+## D-008：使用 candidate 标签进行推送 main 前的验收
 
 - 状态：已撤销
-- 原决策：本地 Commit 后只推送 candidate 标签，由服务器验收后再推送 `main`。
+- 原决策：本地 Commit 后先只推送 candidate 标签，由 A100 服务器以 detached HEAD 验收；通过后才推送 `main`。
 - 替代：见 D-014。当前流程使用提交前完整补丁审查，之后直接 Push `main` 并由服务器 `git pull --ff-only` 验收。
 
 ## D-009：稳定标签记录已验收阶段
@@ -53,22 +55,26 @@
 ## D-010：Mac 仅执行快速 CPU 测试
 
 - 状态：已接受
-- 决策：Mac 执行工作包规定的快速 CPU 测试和静态检查，不承担大型训练。
+- 决策：Mac 端只执行工作包规定的快速 CPU 测试。
+- 原因：快速发现工程错误，同时避免在本地承担不适合的计算任务。
 
 ## D-011：大型和 GPU 任务在 A100 服务器执行
 
 - 状态：已接受
-- 决策：大型训练、多随机种子实验和 GPU 任务只由用户在服务器明确启动。
+- 决策：大型训练、多随机种子实验和 GPU 任务仅由用户在 A100 服务器启动。
+- 原因：集中使用适合的计算资源，并确保高成本任务由用户明确控制。
 
-## D-012：禁止重写已推送 main 历史
+## D-012：禁止重写已推送 main 的历史
 
 - 状态：已接受
-- 决策：已推送问题只通过追加修复 Commit 或 `git revert` 处理，禁止 force push。
+- 决策：已推送的 `main` 禁止 force push、`git reset` 或其他历史重写；问题只能通过追加修复 Commit 或 `git revert` 处理。
+- 原因：保护共享历史的一致性和可追溯性。
 
 ## D-013：服务器不直接修改源码
 
 - 状态：已接受
-- 决策：服务器只从 GitHub 同步并验收；失败日志返回 Mac 修复。
+- 决策：A100 服务器仅用于候选验收，不直接修改源码；失败日志返回 Mac 端，由 Codex 修复。
+- 原因：保持 GitHub 为 Mac 和服务器间唯一代码中转来源，避免环境间产生未追踪分叉。
 
 ## D-014：采用提交前完整补丁独立审查
 
@@ -149,3 +155,34 @@
 - 决策：WP-01C 在实现前必须通过只读设计审查，明确配置 schema、路径语义、序列化格式与版本、复现元数据、覆盖策略、CLI 子命令、统计定义和可选可视化依赖。
 - 约束：WP-01C 不得改变四类过程的科学语义，不得夹带环境、预测或强化学习功能。
 - 原因：文件与 CLI 接口一旦产生外部数据兼容性，修改成本高于纯内存接口，必须先冻结协议。
+
+## D-027：WP-01C 使用严格 YAML v1 与稳定配置哈希
+
+- 状态：已接受
+- 决策：配置仅接受 `fura-mappo.demand-generation` version 1；安全 loader 拒绝重复键、anchor/alias、merge、对象标签和非 JSON-like 内容；resolved config 使用带类型标记的 canonical SHA-256。
+- 原因：配置是可复现实验输入，必须避免隐式默认、类型碰撞和不安全对象构造。
+
+## D-028：WP-01C 使用单文件 NPZ artifact v1
+
+- 状态：已接受
+- 决策：轨迹采用 `fura-mappo.demand-trace` version 1，固定成员、little-endian dtype、内嵌 strict JSON manifest、config/content hash、无 pickle。
+- 安全：ZIP/NPY header 在分配前校验；symlink 拒绝；同目录原子写入；外部内容错误统一为 `ValueError`。
+
+## D-029：WP-01C CLI 第一版只提供 generate 与 summarize
+
+- 状态：已接受
+- 决策：提供 `fura-demand generate` 和 `summarize`；默认拒绝覆盖和 dirty Git；第一版不加入 plot/Matplotlib。
+- 原因：先冻结核心可复现数据协议，避免非核心可视化依赖扩大范围。
+
+## D-030：WP-01C 稳定实现基线
+
+- 状态：已接受
+- 决策：WP-01C 稳定实现 Commit 为 `29a042f7b9fc80d3356cd5c63df1cd26b4078d9b`，里程碑标签为 `wp01c-stable`。
+- 证据：Mac 421 tests、提交前独立审查通过、GitHub Actions `CPU checks` run #7 成功、A100 Python 3.11.15 421 tests。
+- 原因：WP-01 需求生成系统在此形成完整的科学与数据工具稳定基线。
+
+## D-031：WP-02 先冻结环境与 Oracle 信息边界
+
+- 状态：已接受
+- 决策：WP-02 在实现前必须只读分析并冻结环境时间步、服务/移动语义、组成指标、反应式信息集和 Oracle 未来信息窗口；不得先实现最终 RL reward 或 MAPPO。
+- 原因：H1 的 Oracle 价值门槛必须在可解释、固定的环境机制下验证。

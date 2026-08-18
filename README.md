@@ -4,45 +4,27 @@ Forecast-guided, uncertainty-aware multi-agent resource pre-positioning under no
 
 ## Status
 
-- WP-00 and OPS-01 are complete.
-- WP-01A is complete at `b7b48bb394bd4613652b4d1ff4158cb8503f52a5` (`wp01a-stable`).
-- WP-01B is complete at `d67f71b5d75ee47adb120686914d32572ea7d6d1` (`wp01b-stable`).
-- GitHub Actions `CPU checks` run #5 succeeded for the WP-01B implementation Commit.
-- A100 CPU acceptance passed on Python 3.11.15 in the `fura-mappo` Conda environment, as confirmed by the project operator.
-- The current work package is **WP-01C**, beginning with read-only design analysis for configuration, serialization, CLI, summaries, and optional visualization.
-- WP-01 remains CPU-only. Agents, rewards, forecasting models, MAPPO, PyTorch, CUDA changes, and GPU training remain out of scope.
+- WP-01A: `wp01a-stable`
+- WP-01B: `wp01b-stable`
+- WP-01C: `wp01c-stable` -> `29a042f7b9fc80d3356cd5c63df1cd26b4078d9b`
+- WP-01C Mac: 421 tests passed on Python 3.11.15.
+- WP-01C A100: 421 tests passed on Python 3.11.15.
+- GitHub Actions `CPU checks`: run #7, success.
+- Current next stage: **WP-02 read-only design** for the resource-service environment and reactive/Oracle control baselines.
 
-## Implemented demand processes
+## Completed demand system
 
-- `StationaryPoissonDemand`
-- `DriftingHotspotDemand`
-- `MarkovSwitchingDemand`
-- `BurstDemand`
+The package provides four exogenous demand processes, strict YAML configuration v1, stable config hashing, NPZ demand-trace artifact v1, provenance/integrity checks, `fura-demand generate`, `fura-demand summarize`, and deterministic JSON summaries.
 
-All processes are exogenous, reproducible, instance-RNG isolated, and share the frozen `DemandProcess.reset/step/generate` semantics.
-
-## Research objective
-
-The project studies whether future demand forecasts and calibrated forecast uncertainty improve proactive multi-agent resource placement under nonstationary demand. The sequence first establishes exogenous demand processes and reactive/oracle baselines, then introduces forecasting and uncertainty-aware MAPPO, followed by in-distribution, out-of-distribution, and forecast-value phase-diagram analyses.
+The next scientific gate is to compare reactive control with a true-future Oracle in a frozen resource-service environment before adding forecasting or MARL.
 
 ## Documentation
 
-- Chinese overview: `README_zh.md`
-- Project requirements: `docs/PROJECT_REQUIREMENTS.md`
-- Research plan: `docs/RESEARCH_PLAN.md`
-- Current state: `docs/PROJECT_STATE.md`
-- Codex workflow: `docs/CODEX_WORKFLOW.md`
-- WP-01 demand specification: `docs/WP01_DEMAND_GENERATION.md`
-- Completed WP-01A specification: `docs/WP01A_SPEC.md`
-- Completed WP-01B specification: `docs/WP01B_SPEC.md`
-- WP-01B review record: `docs/WP01B_REVIEW.md`
-- Session handoff and WP-01C entry point: `docs/SESSION_HANDOFF.md`
-
-## CPU verification
-
-```bash
-python -m pip install -e ".[dev]"
-bash scripts/verify_cpu.sh
-```
-
-Version-control writes are initiated by the user. Codex may edit and test files but must not commit, push, or tag.
+- `README_zh.md`
+- `docs/PROJECT_STATE.md`
+- `docs/SESSION_HANDOFF.md`
+- `docs/RESEARCH_PLAN.md`
+- `docs/ANALYSIS_PLAN.md`
+- `docs/DECISIONS.md`
+- `docs/WP01C_SPEC.md`
+- `docs/WP01C_REVIEW.md`
