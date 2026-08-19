@@ -1,0 +1,48 @@
+schema: fura-mappo.wp02d-h1
+version: 1
+primary:
+  demand:
+    type: drifting_hotspot
+    base_intensities: [0.025, 0.025, 0.025, 0.025]
+    hotspot_amplitudes: [0.55]
+    hotspot_scales: [0.45]
+    initial_hotspot_positions:
+      - [0.5, 0.5]
+    hotspot_velocities:
+      - [0.25, 0.0]
+    zone_bounds:
+      - [0.0, 1.0, 0.0, 1.0]
+      - [1.0, 2.0, 0.0, 1.0]
+      - [2.0, 3.0, 0.0, 1.0]
+      - [3.0, 4.0, 0.0, 1.0]
+    priority_range: [0.5, 0.5]
+    service_time_range: [1, 2]
+    deadline_offset_range: [2, 3]
+  generation:
+    num_steps: 256
+  environment:
+    initial_resource_positions:
+      - [0.5, 0.5]
+      - [3.5, 0.5]
+    movement_speed: 0.75
+  horizon: 2
+seed_protocol:
+  rule: consecutive
+  base_seed: 20260819
+  count: 256
+bootstrap:
+  resamples: 50000
+  seed: 90260819
+  generator: PCG64
+  method: percentile
+  quantile_method: linear
+gate:
+  delta_min: 0.02
+  lower_quantile: 0.05
+  upper_quantile: 0.95
+  two_sided_quantiles: [0.025, 0.975]
+provenance:
+  wp02c_stable_sha: 9159c841af4f605d6e32cca4b37940f0116a19cf
+sensitivity:
+  horizons: [0, 1, 2, 3, 4]
+  priority_range: [0.25, 0.75]
