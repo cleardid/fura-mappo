@@ -205,3 +205,26 @@
 - 稳定实现：WP-02B 实现 Commit 为 `f290a45a67763b41941e919303b26fb16a67575a`。
 - 证据：最终批准 patch SHA-256 为 `38648aac6ae7d92766244ee2d226cc2a32a4a6d2337b8a039432f0daaadf191f`；独立审查 BLOCKER 0、MAJOR 0、MINOR 0；Mac、GitHub Actions `CPU checks` 与 A100 CPU 验收通过。
 - Oracle 边界：未来 Oracle 必须保持 WP-02A environment physics 与 movement feasibility，但不要求复用 Reactive 的完整 greedy planning；Oracle 的 information set、horizon 和 future planning 留待 WP-02C 独立只读设计，不在本决策中提前冻结。
+
+## D-034：冻结 WP-02C Rolling True-future Oracle 与 bounded future information boundary
+
+- 状态：已接受
+- 决策：Primary Oracle 是 deterministic、stateless、receding-horizon 的 H-step true-future
+  matched heuristic；只接收 explicit bounded `DemandEvent` future view，不持有完整
+  `DemandTrace`。
+- 信息边界：Oracle 不访问 intensity、counts、hidden demand state、RNG、seed、config 或
+  artifact metadata。official builder 只执行最低限度 prefix/pairing validation；正式 paired
+  experiment 必须由调用方使用同一个内存 `DemandTrace` 构造环境和 future view。
+- 物理与控制边界：exact feasibility 与 Reactive/环境复用相同 single-slot movement
+  semantics；H=0、empty future view，以及没有任何 physically feasible future-resource pair
+  时必须结构性退化到冻结 Reactive。
+- 稳定实现：WP-02C 实现 Commit 为 `9159c841af4f605d6e32cca4b37940f0116a19cf`。
+- 科学解释：Primary Oracle 不是 global optimum、optimal controller 或 theoretical upper
+  bound；Oracle 未优于 Reactive 时，不能单独据此断言未来信息没有价值。
+- 后续诊断：bounded diagnostic verifier 留到 WP-02D，用于防止 weak Oracle 造成 H1 false
+  negative；规模上限为不超过 2 resources、4 steps、3 events，使用真实环境，不公开为正式
+  baseline，也不声称全局最优上界。
+- WP-02D 边界：primary H、horizon sensitivity、verifier objective/exact search、H1 gate、
+  paired statistical estimator、uncertainty 与 decision rule 均在 WP-02D 只读设计中冻结；本
+  决策不包含正式 H1 结论。
+- 证据：最终批准 patch SHA-256 为 `5dad6a0c966548bfc981cc8f48a2f84d6f9a5cafe4b2a351c299e2b578c9558a`；独立审查 BLOCKER 0、MAJOR 0、MINOR 0；Mac、GitHub Actions `CPU checks` 与 A100 CPU 验收通过。

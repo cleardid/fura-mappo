@@ -1,7 +1,8 @@
 # FURA-MAPPO 研究计划
 
-WP-01 外生需求生成系统、WP-02A 确定性资源服务环境与 WP-02B Reactive baseline
-已完成；当前唯一阶段为 WP-02C True-future Oracle 的只读设计分析。
+WP-01 外生需求生成系统、WP-02A 确定性资源服务环境、WP-02B Reactive baseline 与
+WP-02C Rolling True-future Oracle 已完成；当前唯一阶段为 WP-02D H1
+Future-Information Value Gate 的只读设计分析。
 
 ## 核心假设
 
@@ -42,16 +43,28 @@ movement primitive，不以 `ceil(distance / speed)` 作为 exact physical truth
 
 稳定实现：`f290a45a67763b41941e919303b26fb16a67575a`。
 
-### True-future Oracle——当前只读设计
+### True-future Oracle——已完成
 
-WP-02C 必须先冻结 Oracle 精确信息集、True-future view 边界、horizon H 与 H=0、future
-event 可见/不可见字段、pre-position action、current/future task 规划关系、receding-horizon
-行为、reservation/plan state、与 WP-02A physics 的隔离、H=0 对 Reactive 的零差异控制、
-防止弱 Oracle 造成 H1 false negative 的 verifier 策略、文件与测试范围，以及 WP-02D H1
-gate 所需接口边界。
+WP-02C 已冻结 public immutable `TrueFutureView`、official builder 和 deterministic、
+stateless、receding-horizon 的 `RollingTrueFutureOracle`。Oracle 只看 H-step bounded
+`DemandEvent`，不持有完整 `DemandTrace`，不访问 intensity、counts、hidden state、seed、
+RNG、config 或 artifact metadata；exact feasibility 与 Reactive/环境复用相同 movement
+semantics。H=0、empty view 和没有可利用 future pair 时结构性退化到 Reactive。
 
-WP-02C 当前不得实现 Oracle。Reactive 与未来 Oracle 必须复用同一环境动力学；两者就绪后
-才在 WP-02D 验证 H1，门槛成立后再进入预测与 MAPPO。
+Primary Oracle 是 H-step rolling true-future matched heuristic，不是 global optimum 或
+theoretical upper bound。稳定实现：`9159c841af4f605d6e32cca4b37940f0116a19cf`。
+
+### H1 Future-Information Value Gate——当前只读设计
+
+WP-02D 必须先冻结 precise estimand、same-`DemandTrace` paired rollout、official view、
+primary H 与 sensitivity、H=0 negative control、mechanism control、bounded diagnostic
+verifier、primary stress cell、paired metrics、统计估计/CI、minimum practical effect、gate
+threshold、false-positive/false-negative 防护和 negative-result failure path。
+
+正式实验必须让环境与 builder 使用同一个内存 `DemandTrace`。WP-02D 当前不得运行 H1、
+实现 verifier 或生成大规模 artifact。只有 H1 gate 支持未来信息具有控制价值后，才进入
+prediction interface、prediction baseline、uncertainty 和 MAPPO；若 H1 不通过，则暂停主线并
+检查 formulation、stress regime 与 Oracle heuristic adequacy。
 
 ### 预测与决策
 后续分别冻结预测接口、预测基线和不确定性感知 MAPPO。
@@ -72,12 +85,14 @@ WP-02C 当前不得实现 Oracle。Reactive 与未来 Oracle 必须复用同一�
 3. 已完成 WP-01C
 4. 已完成 WP-02A 确定性资源服务环境
 5. 已完成 WP-02B Reactive baseline
-6. 当前：WP-02C True-future Oracle 只读设计分析
-7. H1 正式门槛验证
-8. 预测接口与预测基线
-9. 不确定性感知 MAPPO
-10. ID/OOD、消融和相图
-11. 最终统计分析与论文结果
+6. 已完成 WP-02C Rolling True-future Oracle
+7. 当前：WP-02D H1 gate 只读设计分析
+8. WP-02D 实现与 H1 正式门槛验证（仅在只读设计冻结后）
+9. 预测接口与预测基线（仅在 H1 gate 通过后）
+10. 不确定性感知 MAPPO（仅在 H1 gate 通过后）
+11. ID/OOD、消融和相图
+12. 最终统计分析与论文结果
 
-当前不得提前进入 WP-02C 实现、H1 正式门槛运行、predictor、uncertainty、MAPPO、
-PyTorch/GPU、ID/OOD 主实验或大规模 optimizer。
+当前不得运行 H1 正式门槛、实现 bounded verifier、生成大规模实验 artifact，或进入
+predictor、uncertainty、MAPPO、PyTorch/GPU、ID/OOD 主实验、大规模 optimizer 和论文
+主结果实验。
