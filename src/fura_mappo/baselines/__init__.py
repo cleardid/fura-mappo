@@ -1,5 +1,15 @@
 """确定性资源控制基线。"""
 
+from fura_mappo.baselines.oracle import (
+    RollingTrueFutureOracle,
+    TrueFutureView,
+    build_true_future_view,
+)
 from fura_mappo.baselines.reactive import ReactiveController
 
-__all__ = ["ReactiveController"]
+__all__ = [
+    "ReactiveController",
+    "RollingTrueFutureOracle",
+    "TrueFutureView",
+    "build_true_future_view",
+]
