@@ -13,8 +13,9 @@
 
 ## 当前工作包
 
-WP-02D H1 Future-Information Value Gate，只读设计分析。WP-02D 尚不得运行正式实验或
-实现 bounded diagnostic verifier。
+WP-02D overall 进行中。WP-02D1 protocol/statistics baseline 已完成；当前唯一工作是
+WP-02D2 `bounded task-target root-information exhaustive diagnostic verifier` implementation。
+WP-02D2 完成全部实现与验收前不得运行正式 H1。
 
 优先读取：
 
@@ -23,6 +24,8 @@ WP-02D H1 Future-Information Value Gate，只读设计分析。WP-02D 尚不得�
 - `docs/RESEARCH_PLAN.md`
 - `docs/ANALYSIS_PLAN.md`
 - `docs/DECISIONS.md`
+- `docs/WP02D_SPEC.md`
+- `CHANGELOG_WP02D1.md`
 - `docs/WP02A_SPEC.md`
 - `docs/WP02B_SPEC.md`
 - `docs/WP02C_SPEC.md`
@@ -32,6 +35,11 @@ WP-02D H1 Future-Information Value Gate，只读设计分析。WP-02D 尚不得�
 - `src/fura_mappo/baselines/`
 
 ## WP-02 完成文档
+
+### WP-02D1
+
+- `docs/WP02D_SPEC.md`
+- `CHANGELOG_WP02D1.md`
 
 ### WP-02C
 

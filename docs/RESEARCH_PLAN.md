@@ -1,8 +1,9 @@
 # FURA-MAPPO 研究计划
 
-WP-01 外生需求生成系统、WP-02A 确定性资源服务环境、WP-02B Reactive baseline 与
-WP-02C Rolling True-future Oracle 已完成；当前唯一阶段为 WP-02D H1
-Future-Information Value Gate 的只读设计分析。
+WP-01 外生需求生成系统、WP-02A 确定性资源服务环境、WP-02B Reactive baseline、
+WP-02C Rolling True-future Oracle 与 WP-02D1 H1 protocol/statistics baseline 已完成；
+当前唯一阶段为 WP-02D2 bounded diagnostic verifier implementation。WP-02D overall 仍在
+进行中，formal H1 尚未运行。
 
 ## 核心假设
 
@@ -54,16 +55,30 @@ semantics。H=0、empty view 和没有可利用 future pair 时结构性退化�
 Primary Oracle 是 H-step rolling true-future matched heuristic，不是 global optimum 或
 theoretical upper bound。稳定实现：`9159c841af4f605d6e32cca4b37940f0116a19cf`。
 
-### H1 Future-Information Value Gate——当前只读设计
+### H1 Future-Information Value Gate——进行中
 
-WP-02D 必须先冻结 precise estimand、same-`DemandTrace` paired rollout、official view、
-primary H 与 sensitivity、H=0 negative control、mechanism control、bounded diagnostic
-verifier、primary stress cell、paired metrics、统计估计/CI、minimum practical effect、gate
-threshold、false-positive/false-negative 防护和 negative-result failure path。
+WP-02D1 已冻结并实现 strict H1 preregistration、same-`DemandTrace` paired rollout、official
+view、Primary H=2、N=256 consecutive seeds `20260819..20261074`、H=0 negative control、
+canonical mechanism control、primary stress cell、paired diagnostics/metrics、formal
+artifact/results/verdict audit chain、locked verdict 与 local Git provenance hard gate。稳定实现：
+`844de649c71e0a6a8fec6e1355cbf010db434f83`。
 
-正式实验必须让环境与 builder 使用同一个内存 `DemandTrace`。WP-02D 当前不得运行 H1、
-实现 verifier 或生成大规模 artifact。只有 H1 gate 支持未来信息具有控制价值后，才进入
-prediction interface、prediction baseline、uncertainty 和 MAPPO；若 H1 不通过，则暂停主线并
+Primary outcome 对每条 trace 为
+`(completed_oracle-completed_reactive)/arrived`，zero-arrival 时为 0；estimand 是每条 trace
+等权的 mean。冻结 `delta_min=0.02`，并用 paired trace percentile bootstrap（NumPy PCG64、
+50,000 resamples、seed `90260819`）形成 one-sided 95% bounds。PASS/FAIL/INCONCLUSIVE 与任何
+protocol violation 对应的 PROTOCOL_FAIL 已预注册；secondary metric 和 sensitivity 不能改变
+primary verdict。
+
+WP-02D2 当前只实现不超过 2 resources、4 steps、3 events 的
+`bounded task-target root-information exhaustive diagnostic verifier`，用于诊断 weak greedy
+Oracle 是否可能产生 H1 false negative。它使用真实环境与 public `reset()` / `step()`，不公开为
+baseline，也不声称 global optimum、continuous-control optimum 或 theoretical upper bound。
+
+正式 primary traces、H1 rollouts、artifacts/results/verdict 当前均为零。D2 实现、完整候选 patch
+审查、Commit/Push、GitHub Actions 与 Mac/A100 acceptance 全部完成后，才允许用户明确启动
+formal artifact/H1 execution。只有 H1 gate 支持未来信息具有控制价值后，才进入 prediction
+interface、prediction baseline、uncertainty 和 MAPPO；若 H1 不通过，则暂停主线并按预注册路径
 检查 formulation、stress regime 与 Oracle heuristic adequacy。
 
 ### 预测与决策
@@ -86,13 +101,14 @@ prediction interface、prediction baseline、uncertainty 和 MAPPO；若 H1 不�
 4. 已完成 WP-02A 确定性资源服务环境
 5. 已完成 WP-02B Reactive baseline
 6. 已完成 WP-02C Rolling True-future Oracle
-7. 当前：WP-02D H1 gate 只读设计分析
-8. WP-02D 实现与 H1 正式门槛验证（仅在只读设计冻结后）
-9. 预测接口与预测基线（仅在 H1 gate 通过后）
-10. 不确定性感知 MAPPO（仅在 H1 gate 通过后）
-11. ID/OOD、消融和相图
-12. 最终统计分析与论文结果
+7. 已完成 WP-02D1 H1 protocol/statistics baseline
+8. 当前：WP-02D2 bounded diagnostic verifier implementation
+9. WP-02D formal artifact generation 与 H1 正式门槛验证（仅在 D2 全部验收后）
+10. 预测接口与预测基线（仅在 H1 gate 通过后）
+11. 不确定性感知 MAPPO（仅在 H1 gate 通过后）
+12. ID/OOD、消融和相图
+13. 最终统计分析与论文结果
 
-当前不得运行 H1 正式门槛、实现 bounded verifier、生成大规模实验 artifact，或进入
-predictor、uncertainty、MAPPO、PyTorch/GPU、ID/OOD 主实验、大规模 optimizer 和论文
-主结果实验。
+当前不得生成 256 primary artifacts、运行 Primary H=2/formal H=0/sensitivity、写 formal
+primary JSONL、计算 verdict，或进入 predictor、uncertainty、MAPPO、PyTorch/GPU、ID/OOD
+主实验、大规模 optimizer 和论文主结果实验。

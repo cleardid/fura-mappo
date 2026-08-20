@@ -228,3 +228,37 @@
   paired statistical estimator、uncertainty 与 decision rule 均在 WP-02D 只读设计中冻结；本
   决策不包含正式 H1 结论。
 - 证据：最终批准 patch SHA-256 为 `5dad6a0c966548bfc981cc8f48a2f84d6f9a5cafe4b2a351c299e2b578c9558a`；独立审查 BLOCKER 0、MAJOR 0、MINOR 0；Mac、GitHub Actions `CPU checks` 与 A100 CPU 验收通过。
+
+## D-035：冻结 WP-02D H1 gate preregistration 与 WP-02D1 protocol/statistics baseline
+
+- 状态：已接受
+- Primary stress cell：预注册 `DriftingHotspotDemand` primary cell，256 steps、2 resources、
+  `movement_speed=0.75`、固定 priority 0.5、Primary H=2；完整数值配置以
+  `docs/WP02D_SPEC.md` 与 `configs/experiments/wp02d_h1.yaml` 为准。
+- Seed protocol：N=256，固定 consecutive seeds `20260819..20261074`；Reactive 与 Oracle
+  必须在独立环境中消费同一个内存 `DemandTrace`。
+- Primary outcome：每条 trace 若 arrived > 0，
+  `D_i=(completed_oracle-completed_reactive)/arrived`；若 arrived=0，`D_i=0`。Primary
+  estimand 冻结为每条 trace 等权的 `mean(D_i)`。
+- Gate：`delta_min=0.02` absolute completion fraction。PASS 要求 point estimate ≥ 0.02 且
+  one-sided 95% LCB > 0；FAIL 要求不满足 PASS 且 one-sided 95% UCB < 0.02；其余有效结果为
+  INCONCLUSIVE；任何 protocol violation 为 PROTOCOL_FAIL。Secondary metric 或 sensitivity
+  不得改变 primary verdict。
+- Uncertainty：paired resampling unit 为 trace，冻结 NumPy
+  `Generator(PCG64(90260819))` percentile bootstrap、50,000 resamples、linear quantile。
+- Audit chain：冻结 exact validated spec → experiment spec hash → frozen inventory/inventory
+  hash → exact entry → safely loaded artifact 与 config/content hashes → provenance-bound paired
+  result/results digest → gate summary → locked verdict。Verdict 必须绑定 exact
+  spec/inventory/results/provenance；旧 verdict 不能解锁另一组 sensitivity results。
+- Protocol controls：冻结 H=0 strict invariant、canonical mechanism preflight、same-state
+  counterfactual diagnostics、realized Oracle diagnostics、strict JSON/JSONL 与 atomic
+  no-overwrite outputs，以及 local Git provenance hard gate。
+- 稳定实现：WP-02D1 implementation Commit 为
+  `844de649c71e0a6a8fec6e1355cbf010db434f83`。
+- 科学状态：WP-02D1 是 protocol/statistics implementation，不是 H1 scientific result；正式
+  primary traces、controller rollouts、artifacts/results/verdict 均为零，formal H1 尚未运行。
+- 下一门禁：必须先完成并验收 WP-02D2
+  `bounded task-target root-information exhaustive diagnostic verifier`，包括完整候选 patch
+  审查、Commit/Push、GitHub Actions 与 Mac/A100 acceptance，之后才允许用户明确启动正式
+  artifact/H1 execution。WP-02D2 不是新的 public baseline，也不声称 global optimum、
+  continuous-control optimum 或 theoretical upper bound。

@@ -1,61 +1,130 @@
 # 统计分析计划
 
-状态：研究设计草案。WP-01 已完成；WP-02 将冻结控制环境指标和 Oracle 门槛比较。
+状态：WP-02D1 primary H1 gate 已预注册冻结并实现；formal data 尚未生成，formal H1 尚未运行。
 
 ## 第一科学门槛
 
 ```text
-Reactive baseline
+ReactiveController
 vs
-True-future Oracle
+RollingTrueFutureOracle (Primary H=2)
 ```
 
-要求：
+实验单位是一条预注册 seed 产生的 `DemandTrace`。Reactive 与 Oracle 必须使用同一个内存
+trace、相同环境配置和独立环境实例；仅 information set/controller 不同。Oracle future view
+必须由 official `build_true_future_view()` 构造。
 
-- 使用相同 DemandTrace/artifact 配对
-- 仅信息集不同
-- 资源、移动、服务规则相同
-- Oracle horizon 预先冻结
-- 同时报告服务质量和资源成本组成项
-- 若 Oracle 无稳定优势，暂停预测/MAPPO 主线并检查问题设定
+## 冻结 Primary stress cell
 
-## 候选环境指标
+- `DriftingHotspotDemand`
+- 四个连续 1×1 zones：`x in [0,4]`、`y in [0,1]`
+- `base_intensities=[0.025,0.025,0.025,0.025]`
+- `hotspot_amplitudes=[0.55]`，`hotspot_scales=[0.45]`
+- initial hotspot `(0.5,0.5)`，velocity `(0.25,0.0)`
+- `priority_range=[0.5,0.5]`
+- `service_time_range=[1,2]`，`deadline_offset_range=[2,3]`
+- 256 steps；2 resources at `(0.5,0.5)` and `(3.5,0.5)`
+- `movement_speed=0.75`
 
-- served / unserved
-- service rate
-- deadline miss rate
-- waiting / response time
-- completions
-- utilization / idle
-- travel / relocation
-- capacity shortfall
-- 综合成本
-- 相对 Reactive 改善
-- 相对 Oracle gap
+## 冻结 Primary outcome 与 estimand
 
-不得只报告单一 reward。
+对 trace i，两侧必须满足相同 arrived count `A_i`：
 
-## 随机性与比较
+```text
+A_i > 0:
+    D_i = (completed_oracle - completed_reactive) / A_i
+A_i == 0:
+    D_i = 0
+```
 
-- 方法间使用相同需求 artifact
-- 控制器随机性与需求 RNG 分离
-- train/validation/ID/OOD 集合分离
-- 不因结果删除 seed
-- 异常排除规则预先定义
+Primary estimand 为 `mean_i(D_i)`。每条 trace 等权；禁止 ratio-of-total-counts、priority
+reward、best-seed subset，或删除/替换 zero-arrival seed。
 
-## WP-01C 验收
+## 冻结 seeds、bootstrap 与 gate
 
-- Mac 421 tests
-- A100 421 tests
-- GitHub Actions run #7 success
-- config/hash/artifact/security/summary/CLI 机制测试全部通过
+```text
+Primary H = 2
+N = 256
+seeds = 20260819..20261074
+paired resampling unit = trace
+resamples = 50000
+Generator = numpy.random.Generator(PCG64(90260819))
+bootstrap method = percentile
+np.quantile method = linear
+one-sided LCB = 5% quantile
+one-sided UCB = 95% quantile
+two-sided interval = [2.5%, 97.5%]
+delta_min = 0.02 absolute completion fraction
+```
 
-## WP-02 必须定义
+```text
+PASS:
+    point_estimate >= 0.02 and one_sided_lcb > 0
 
-- 指标分母与边界行为
-- episode 结束未完成任务的计分
-- deadline miss 与 unserved 是否重复
-- 移动成本与服务收益分开报告
-- Oracle horizon 和动作约束
-- Reactive/Oracle 配对单位
-- H1 小规模机制测试和方差估计
+FAIL:
+    not PASS and one_sided_ucb < 0.02
+
+INCONCLUSIVE:
+    all other valid results
+
+PROTOCOL_FAIL:
+    any protocol violation; not a scientific inference result
+```
+
+Secondary metric、H sensitivity 或其他 sensitivity 不得改变 primary verdict。H metadata 为
+0/1/2/3/4；H=0 是逐 step/action/result/terminal-metrics 精确相等的 hard protocol invariant，
+不是 superiority sensitivity。
+
+## 配对诊断与 secondary metrics
+
+Primary verdict 只读取 `D_i`。每条 trace 另保存完整 `EpisodeMetrics`，aggregate 分别报告：
+
+- completed 与 completion rate
+- expired/expiration rate、truncated/truncation rate
+- completed priority sum
+- service/movement/idle slots 与 movement distance
+- mean service-start wait 与 mean completed response
+- duplicate assignment conflicts 与 zero-distance moves
+
+同时报告 same-state counterfactual opportunity/action-difference/preposition diagnostics 与 realized
+Oracle pre-arrival movement diagnostics。服务改善与移动成本分开，不组合成 reward。
+
+## Formal protocol 与 audit chain
+
+正式 evaluator 必须严格验证 exact 256 records、seed 集与顺序、H=2、两侧 arrived 相等、finite
+differences、无 protocol failure，以及每条 result 的 spec/artifact/environment provenance。
+
+```text
+validated H1 spec
+-> experiment_spec_sha256
+-> frozen ArtifactInventory
+-> artifact_inventory_sha256
+-> exact ArtifactInventoryEntry
+-> safely loaded artifact
+-> artifact config/content hashes
+-> provenance-bound PairedTraceResult
+-> paired_results_sha256
+-> H1GateSummary
+-> locked primary verdict
+```
+
+Verdict 必须绑定 exact spec/inventory/results/provenance；formal sensitivity 必须重新验证该完整
+链，旧 verdict 不能解锁另一组 results。任何生成、读取、hash、配对或 provenance 失败均 hard
+fail，不得删除 seed、替换 seed 或静默排除。
+
+## Negative-result 诊断
+
+Primary 不 PASS 时，依次检查 H=0、canonical mechanism、load/opportunity diagnostics、统计
+precision，最后运行预注册 WP-02D2 bounded verifier suite。Verifier miss 只能阻止把 negative
+result 解释为“未来信息没有价值”，不能把 primary verdict 改成 PASS。
+
+## 当前 formal execution 状态
+
+```text
+Formal primary traces generated: 0 / 256
+Formal H1 controller rollouts: 0
+Formal experiment artifacts/results/verdict: 0
+```
+
+WP-02D2 完成实现、完整候选 patch 审查、Commit/Push、GitHub Actions 与 Mac/A100 acceptance
+前，不得运行 Primary H=2、formal H=0 或 sensitivity，也不得计算 formal verdict。
