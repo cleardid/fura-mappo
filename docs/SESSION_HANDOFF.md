@@ -1,18 +1,21 @@
 # 会话交接
 
-更新日期：2026-08-20
+更新日期：2026-08-21
 
 ## 当前唯一任务
 
-WP-02D2 `bounded task-target root-information exhaustive diagnostic verifier` implementation。
-必须先形成完整候选 patch 并通过独立审查；本 docs-only checkpoint 不实现 verifier。
+下一阶段为 Formal H1 execution preparation / audit gate。WP-02D1 与 WP-02D2 均已完成并接受，
+但 WP-02D overall 仍在进行中，因为 Formal H1 scientific gate 尚未执行。本 docs-only checkpoint
+只记录 accepted facts，不启动或解锁 formal data generation。
 
-WP-02D1 已完成，WP-02D overall 仍在进行中。正式 H1 未运行。WP-02D2 完成实现、完整 patch
-审查、Commit/Push、GitHub Actions 与 Mac/A100 acceptance 前，不得生成或运行正式 H1。
+Formal H1 只能在本 docs-only checkpoint Commit/Push 完成、下一阶段 execution-readiness audit
+通过后，由用户明确授权启动。
 
 ## 稳定基线
 
 ```text
+WP-02D2 实现：cfab8c1b1981ef095d68969fff74faa2ac4f256d
+WP-02D1 docs checkpoint：fe1b97496c937ec6f660c48419441eb9569e31ba
 WP-02D1 实现：844de649c71e0a6a8fec6e1355cbf010db434f83
 WP-02C 实现：9159c841af4f605d6e32cca4b37940f0116a19cf
 WP-02B 实现：f290a45a67763b41941e919303b26fb16a67575a
@@ -128,6 +131,39 @@ Formal sensitivity 必须重新验证 exact spec/inventory/results/provenance；
 - A100：同一 Commit；Ruff `All checks passed`；format `79 files already formatted`；完整 CPU
   `629 passed in 23.12s`；CPU 验收全部通过；最终工作树干净；正式 H1 未运行
 
+## WP-02D2 接受结论
+
+accepted implementation Commit 为 `cfab8c1b1981ef095d68969fff74faa2ac4f256d`，提交说明为
+`feat: add bounded root-information verifier`。准确名称是
+`bounded task-target root-information exhaustive diagnostic verifier`。它是 private、
+diagnostic-only verifier，不是 formal baseline、global optimum、continuous-control optimum、
+theoretical upper bound、optimal policy 或 Primary adequacy proof。
+
+实现只新增：
+
+```text
+src/fura_mappo/experiments/_bounded_verifier.py
+tests/test_bounded_verifier.py
+```
+
+`fura_mappo.experiments` public API 未导出 verifier；`h1_gate.py`、environment physics、Reactive、
+Primary Oracle 与 formal H1 preregistration 均未修改。
+
+### 独立审查与验收
+
+- 批准 patch SHA-256：`f6cb0e8638847b4b84f84421f5bbc77926abc6995a4704f6cb11300ff8ff172f`
+- patch：2 diff sections，38,147 bytes，2 files changed，998 insertions，0 deletions
+- 独立审查：BLOCKER 0、MAJOR 0、MINOR 0
+- Mac：WP-02D2 dedicated 35 passed；WP-02A/B/C/D1 relevant regression 208 passed；full CPU
+  664 passed；Ruff passed；format 82 files already formatted
+- GitHub Actions：Commit `cfab8c1b1981ef095d68969fff74faa2ac4f256d`；`CPU checks` success；
+  未记录未经仓库确认的 run number
+- A100 server CPU acceptance：同一 Commit；WP-02D2 dedicated `35 passed in 6.35s`；full CPU
+  `664 passed in 26.76s`；Ruff `All checks passed!`；format `82 files already formatted`；
+  `git diff --check` passed；final working tree clean
+
+A100 记录是 CPU acceptance，不是 GPU test，未执行 PyTorch/GPU workload。
+
 ## 当前 formal execution 状态
 
 ```text
@@ -138,14 +174,13 @@ Formal experiment artifacts/results/verdict: 0
 
 ## WP-02D2 冻结实现边界
 
-准确名称：`bounded task-target root-information exhaustive diagnostic verifier`。目标仅是诊断
-Primary `RollingTrueFutureOracle` 是否因 greedy planning 太弱而产生 H1 false negative；它不是
-新的 public baseline，也不是 global optimum、continuous-control optimum 或 theoretical upper
-bound。
+目标仅是诊断 Primary `RollingTrueFutureOracle` 是否因 greedy planning 太弱而产生 H1 false
+negative。Verifier output 不进入 formal primary verdict 输入。
 
 硬边界：resources ≤ 2、episode steps ≤ 4、events ≤ 3。环境分支使用真实
 `ResourceServiceEnvironment`，只能通过 public `reset()` / `step()`，不得读写 `env._state` 或
-复制 environment transition logic。
+其他 private environment state，也不得复制 environment transition logic。每个 candidate branch
+使用 fresh environment、deterministic prefix replay 和 exact public replay consistency checks。
 
 每个 root decision time：
 
@@ -153,10 +188,24 @@ bound。
 K = current active tasks + root official H-step future events
 ```
 
-搜索期间 K 冻结，不刷新 future view 或引入 root H 外事件；下一真实 decision boundary 才重建
-K。有限动作集：SERVING 仅 Continue；AVAILABLE 可 Idle、legal Serve(K waiting) 或 Move(K event
-positions)。Objective 仅最大化 K 中 completed count；完成数 tie 只使用 deterministic canonical
-action-sequence ordering，不加入 priority、movement、waiting 或 reward weights。
+official view 由 `build_true_future_view(...)` 构造。搜索期间 K 冻结，不刷新 future view 或引入
+root H 外事件；下一真实 decision boundary 才重建 K 并重新 exhaustive search。有限动作集：
+SERVING 仅 Continue；AVAILABLE 可 Idle、legal Serve(frozen-K current WAITING) 或 Move(frozen-K
+event positions)；保留 zero-distance Move 与 environment-legal duplicate Serve joint actions。
+
+Root search 一直搜索至 episode terminal，不使用 pruning、memoization、symmetry reduction 或
+dominance。Objective 仅 maximize `completed_over_K`；tie 仅 lexicographically minimize canonical
+complete sequence key，不加入 priority、movement distance、wait、reward 或 secondary objective：
+
+```text
+ContinueAction -> (0,)
+IdleAction     -> (1,)
+MoveAction     -> (2, x, y)
+ServeAction    -> (3, event_id)
+```
+
+Joint action 按 increasing resource_id，sequence 按 increasing time。该 ordering 不是 performance
+preference。rolling verifier 每个真实 boundary 只采用最佳完整 sequence 的 first joint action。
 
 ## 预注册 verifier suite
 
@@ -174,13 +223,40 @@ Fixture 6 必须使用修正版：root H 外 event 为 `arrival=3`、position `(
 相同、root K IDs 精确为 `{0}`、root Move targets 不含 `±3`，且 first joint action 完全相同。
 不得退回旧 `±2` 版本。
 
-## 当前禁止事项
+Handcrafted fixture unit-test expectations 为：
 
-WP-02D2 实现与全部验收完成前，不得：
+```text
+        Primary    Verifier
+F1         1           1
+F2         1           2
+F3         1           2
+F4         1           2
+F5         0           0
+F6A        1           1
+F6B        1           1
+```
 
-- generate 256 primary artifacts
-- run Primary H=2 或 formal H=0 set
-- run sensitivity
-- write formal primary JSONL
-- calculate formal verdict
-- 进入 prediction、uncertainty、MAPPO/RL、PyTorch/GPU 或正式主实验
+这些是 unit-test expectations，不是 Formal H1 outcome 或 formal primary evidence。冻结 classifier：
+任一 fixture 的 verifier completed > Primary completed 时为
+`PRIMARY_HEURISTIC_MISS_DETECTED`；否则为
+`NO_HEURISTIC_MISS_DETECTED_WITHIN_PREREGISTERED_BOUNDED_SUITE`。后者不表示 Primary optimal
+或 heuristic adequacy proven；两个标签都不是 Formal H1 scientific outcome。
+
+## 下一阶段 audit gate 与当前禁止事项
+
+Formal H1 execution preparation / audit gate 必须在任何正式 primary trace 生成前核对 accepted
+implementation ancestry、clean main、exact preregistered spec、正式 seed prohibition 解除前的人工
+确认、exact output paths / artifact root、provenance hard gate、no-overwrite policy、formal run
+command sequence，并保持 sensitivity 锁定在 primary verdict 之后。
+
+当前 Formal H1 未运行，formal primary traces 为 `0 / 256`，正式 seeds 仍为
+`20260819..20261074`。尚未生成或运行：
+
+- 256 formal NPZ、formal artifact inventory、formal paired JSONL、formal aggregate、formal primary
+  verdict
+- formal H=0 set、formal H=2 primary rollout、H sensitivity、stress sensitivity
+- formal point estimate、LCB/UCB 或 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome
+
+本 docs checkpoint 不启动或解锁上述工作。在 Formal H1 scientific gate 产生有效结果并完成解释
+前，不得进入 prediction、forecast uncertainty、MAPPO、PyTorch/GPU training 或 ID/OOD main
+experiment。

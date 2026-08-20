@@ -262,3 +262,49 @@
   审查、Commit/Push、GitHub Actions 与 Mac/A100 acceptance，之后才允许用户明确启动正式
   artifact/H1 execution。WP-02D2 不是新的 public baseline，也不声称 global optimum、
   continuous-control optimum 或 theoretical upper bound。
+
+## D-036：接受 WP-02D2 bounded root-information verifier implementation baseline
+
+- 状态：已接受
+- 稳定实现：WP-02D2 implementation Commit 为
+  `cfab8c1b1981ef095d68969fff74faa2ac4f256d`，实现说明为
+  `feat: add bounded root-information verifier`。
+- 科学定位：WP-02D2 是 private、diagnostic-only 的
+  `bounded task-target root-information exhaustive diagnostic verifier`，用于识别 weak greedy
+  Primary Oracle 可能造成的 H1 false negative；它不是 formal baseline、global optimum、
+  continuous-control optimum、theoretical upper bound、optimal policy 或 Primary adequacy proof，
+  verifier output 不进入 formal primary verdict 输入。
+- Root-information boundary：每个真实 decision boundary 使用 official
+  `build_true_future_view(...)` 冻结
+  `K = current active tasks + official H-step future view events`；一次 root search 内不刷新 K 或
+  future view，不引入 root horizon 外事件，下一真实 boundary 才重新构造 K 并重新搜索。
+- Replay 与环境边界：规模限制为 resources ≤ 2、episode steps ≤ 4、events ≤ 3；每个 branch
+  使用 fresh `ResourceServiceEnvironment` 和 deterministic prefix replay，state transition 只能经
+  public `reset()` / `step()`，禁止 private environment state 或复制 transition logic。
+- 有限动作空间：SERVING 仅 Continue；AVAILABLE 可 Idle、对 frozen-K current WAITING event 的
+  legal Serve，以及 target 来自 frozen-K event positions 的 Move；保留 zero-distance Move 与
+  environment-legal duplicate Serve joint actions。搜索一直到 episode terminal，不使用 pruning、
+  memoization、symmetry reduction 或 dominance。
+- Objective 与 tie-break：唯一 objective 是 maximize completed count over frozen K；相同完成数仅
+  按 canonical complete sequence key 的字典序最小值选择：Continue `(0,)`、Idle `(1,)`、Move
+  `(2,x,y)`、Serve `(3,event_id)`，joint action 按 increasing resource_id，sequence 按 increasing
+  time。该 ordering 不是 performance preference，不加入 priority、movement distance、wait、
+  reward 或 secondary objective。
+- 预注册 fixtures：handcrafted F1/F2/F3/F4/F5/F6A/F6B 的 Primary/Verifier 期望分别为
+  `1/1`、`1/2`、`1/2`、`1/2`、`0/0`、`1/1`、`1/1`。Fixture 6 使用修正版外部位置
+  `(3,0)` / `(-3,0)`，冻结相同 root snapshot/view、root K IDs `{0}`、排除 `±3` Move targets 与
+  相同 first joint action；这些是 unit-test expectations，不是 Formal H1 evidence。
+- Diagnostic classifier：任一预注册 fixture 的 verifier completed > Primary completed 时为
+  `PRIMARY_HEURISTIC_MISS_DETECTED`，否则为
+  `NO_HEURISTIC_MISS_DETECTED_WITHIN_PREREGISTERED_BOUNDED_SUITE`；后者不证明 Primary optimal
+  或 heuristic adequacy，两个标签均不是 Formal H1 outcome。
+- 接受证据：批准 patch SHA-256 为
+  `f6cb0e8638847b4b84f84421f5bbc77926abc6995a4704f6cb11300ff8ff172f`，独立审查 BLOCKER 0、
+  MAJOR 0、MINOR 0；Mac、GitHub Actions `CPU checks` 与 A100 server CPU acceptance 均通过。
+  implementation 仅新增 verifier 私有模块和专项测试；public experiments API、`h1_gate.py`、
+  environment physics、Reactive、Primary Oracle 与 formal H1 preregistration 均未修改。
+- 当前科学状态：Formal H1 尚未运行，formal primary traces 为 `0 / 256`，正式 seeds 仍为
+  `20260819..20261074`。WP-02D1 与 WP-02D2 已完成 / accepted，但 WP-02D overall 仍在进行中。
+- 下一门禁：Formal H1 只能在本 docs-only checkpoint Commit/Push 完成、下一阶段 Formal H1
+  execution preparation / audit gate 通过后，由用户明确授权启动；在有效 scientific gate 结果及
+  解释完成前继续禁止 prediction、forecast uncertainty、MAPPO 与 PyTorch/GPU training。

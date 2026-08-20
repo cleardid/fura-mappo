@@ -1,9 +1,9 @@
 # FURA-MAPPO 研究计划
 
 WP-01 外生需求生成系统、WP-02A 确定性资源服务环境、WP-02B Reactive baseline、
-WP-02C Rolling True-future Oracle 与 WP-02D1 H1 protocol/statistics baseline 已完成；
-当前唯一阶段为 WP-02D2 bounded diagnostic verifier implementation。WP-02D overall 仍在
-进行中，formal H1 尚未运行。
+WP-02C Rolling True-future Oracle、WP-02D1 H1 protocol/statistics baseline 与 WP-02D2 bounded
+diagnostic verifier 已完成并接受。WP-02D overall 仍在进行中，formal H1 尚未运行；当前下一阶段
+是 Formal H1 execution preparation / audit gate。
 
 ## 核心假设
 
@@ -70,16 +70,29 @@ Primary outcome 对每条 trace 为
 protocol violation 对应的 PROTOCOL_FAIL 已预注册；secondary metric 和 sensitivity 不能改变
 primary verdict。
 
-WP-02D2 当前只实现不超过 2 resources、4 steps、3 events 的
+WP-02D2 accepted implementation Commit 为
+`cfab8c1b1981ef095d68969fff74faa2ac4f256d`。它实现不超过 2 resources、4 steps、3 events 的
 `bounded task-target root-information exhaustive diagnostic verifier`，用于诊断 weak greedy
 Oracle 是否可能产生 H1 false negative。它使用真实环境与 public `reset()` / `step()`，不公开为
-baseline，也不声称 global optimum、continuous-control optimum 或 theoretical upper bound。
+baseline，也不声称 global optimum、continuous-control optimum、theoretical upper bound、optimal
+policy 或 Primary adequacy proof。每个真实 decision boundary 以 official view 冻结
+`K = current active tasks + official H-step future view events`；branch 使用 fresh environment 与
+deterministic prefix replay，root search 不刷新 future view 并一直穷举到 episode terminal。有限
+action space 只含 frozen-K task targets；objective 仅 maximize completed count over frozen K，tie
+仅按 deterministic canonical complete sequence ordering，不使用 priority、movement、wait、reward
+或 secondary objective。Verifier output 不进入 formal primary verdict 输入。
 
-正式 primary traces、H1 rollouts、artifacts/results/verdict 当前均为零。D2 实现、完整候选 patch
-审查、Commit/Push、GitHub Actions 与 Mac/A100 acceptance 全部完成后，才允许用户明确启动
-formal artifact/H1 execution。只有 H1 gate 支持未来信息具有控制价值后，才进入 prediction
-interface、prediction baseline、uncertainty 和 MAPPO；若 H1 不通过，则暂停主线并按预注册路径
-检查 formulation、stress regime 与 Oracle heuristic adequacy。
+WP-02D2 的 frozen handcrafted fixture expectations 已作为 unit tests 验收；它们不是 Formal H1
+outcome 或 formal primary evidence。正式 seeds 仍为 `20260819..20261074`，formal primary traces
+为 `0 / 256`，H1 rollouts、artifacts/results/verdict 均为零。Formal H1 只能在本 docs-only
+checkpoint Commit/Push 完成、下一阶段 execution-readiness audit 通过后，由用户明确授权启动。
+该 audit 必须确认 accepted ancestry、clean main、exact preregistered spec、formal seed prohibition
+解除前的人工确认、exact output paths / artifact root、provenance hard gate、no-overwrite policy、
+formal run command sequence，以及 sensitivity 仍锁定在 primary verdict 之后。
+
+只有 H1 gate 支持未来信息具有控制价值后，才进入 prediction interface、prediction baseline、
+uncertainty 和 MAPPO；若 H1 不通过，则暂停主线并按预注册路径检查 formulation、stress regime 与
+Oracle heuristic adequacy。
 
 ### 预测与决策
 后续分别冻结预测接口、预测基线和不确定性感知 MAPPO。
@@ -102,13 +115,17 @@ interface、prediction baseline、uncertainty 和 MAPPO；若 H1 不通过，则
 5. 已完成 WP-02B Reactive baseline
 6. 已完成 WP-02C Rolling True-future Oracle
 7. 已完成 WP-02D1 H1 protocol/statistics baseline
-8. 当前：WP-02D2 bounded diagnostic verifier implementation
-9. WP-02D formal artifact generation 与 H1 正式门槛验证（仅在 D2 全部验收后）
-10. 预测接口与预测基线（仅在 H1 gate 通过后）
-11. 不确定性感知 MAPPO（仅在 H1 gate 通过后）
-12. ID/OOD、消融和相图
-13. 最终统计分析与论文结果
+8. 已完成 WP-02D2 bounded diagnostic verifier implementation / acceptance
+9. 当前：Formal H1 execution preparation / audit gate
+10. WP-02D formal artifact generation 与 H1 正式门槛验证（仅在 docs checkpoint 和 audit 后由
+    用户明确授权）
+11. 预测接口与预测基线（仅在 H1 gate 通过后）
+12. 不确定性感知 MAPPO（仅在 H1 gate 通过后）
+13. ID/OOD、消融和相图
+14. 最终统计分析与论文结果
 
-当前不得生成 256 primary artifacts、运行 Primary H=2/formal H=0/sensitivity、写 formal
-primary JSONL、计算 verdict，或进入 predictor、uncertainty、MAPPO、PyTorch/GPU、ID/OOD
-主实验、大规模 optimizer 和论文主结果实验。
+当前未生成 256 formal NPZ、formal artifact inventory、formal paired JSONL、formal aggregate 或
+formal primary verdict，也未运行 Primary H=2、formal H=0、H sensitivity 或 stress sensitivity；
+不得记录 formal point estimate、LCB/UCB 或正式 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
+在 Formal H1 scientific gate 产生有效结果并完成解释前，不得进入 predictor、forecast
+uncertainty、MAPPO、PyTorch/GPU training、ID/OOD 主实验、大规模 optimizer 或论文主结果实验。

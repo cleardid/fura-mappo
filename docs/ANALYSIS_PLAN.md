@@ -1,6 +1,7 @@
 # 统计分析计划
 
-状态：WP-02D1 primary H1 gate 已预注册冻结并实现；formal data 尚未生成，formal H1 尚未运行。
+状态：WP-02D1 primary H1 gate 已预注册冻结并实现；WP-02D2 bounded diagnostic verifier 已完成并
+接受。formal data 尚未生成，formal H1 尚未运行。
 
 ## 第一科学门槛
 
@@ -115,8 +116,35 @@ fail，不得删除 seed、替换 seed 或静默排除。
 ## Negative-result 诊断
 
 Primary 不 PASS 时，依次检查 H=0、canonical mechanism、load/opportunity diagnostics、统计
-precision，最后运行预注册 WP-02D2 bounded verifier suite。Verifier miss 只能阻止把 negative
-result 解释为“未来信息没有价值”，不能把 primary verdict 改成 PASS。
+precision，最后运行预注册 WP-02D2 bounded verifier suite。Accepted implementation Commit 为
+`cfab8c1b1981ef095d68969fff74faa2ac4f256d`。该 verifier 是 bounded、task-target、
+root-information、diagnostic-only exhaustive search，不是 formal baseline、global optimum、
+continuous-control optimum、theoretical upper bound、optimal policy 或 Primary adequacy proof。
+
+Verifier 每个真实 boundary 冻结
+`K = current active tasks + official H-step future view events`，以真实环境 public `reset()` /
+`step()`、fresh environment 与 deterministic prefix replay 穷举到 episode terminal。有限动作只指向
+frozen K；唯一 objective 是 maximize completed count over K，tie 仅 lexicographically minimize
+canonical complete sequence key。Verifier miss 只能阻止把 negative result 解释为“未来信息没有
+价值”，不能把 primary verdict 改成 PASS；verifier output 不进入 formal primary verdict 输入。
+
+冻结 handcrafted fixture unit-test expectations 为：
+
+```text
+        Primary    Verifier
+F1         1           1
+F2         1           2
+F3         1           2
+F4         1           2
+F5         0           0
+F6A        1           1
+F6B        1           1
+```
+
+这些 fixture 结果不是 Formal H1 outcome 或 formal primary evidence。任一 fixture 的 verifier
+completed > Primary completed 时，diagnostic label 为 `PRIMARY_HEURISTIC_MISS_DETECTED`；否则为
+`NO_HEURISTIC_MISS_DETECTED_WITHIN_PREREGISTERED_BOUNDED_SUITE`。第二个 label 不表示 Primary
+optimal 或 heuristic adequacy proven，两个 label 均不能改变冻结 primary verdict。
 
 ## 当前 formal execution 状态
 
@@ -127,4 +155,13 @@ Formal experiment artifacts/results/verdict: 0
 ```
 
 WP-02D2 完成实现、完整候选 patch 审查、Commit/Push、GitHub Actions 与 Mac/A100 acceptance
-前，不得运行 Primary H=2、formal H=0 或 sensitivity，也不得计算 formal verdict。
+均已完成；WP-02D overall 仍在进行中。下一阶段是 Formal H1 execution preparation / audit gate，
+不是 prediction 或 MAPPO。Formal H1 只能在本 docs-only checkpoint Commit/Push 完成、该
+execution-readiness audit 通过后，由用户明确授权启动。
+
+正式 seeds 仍为 `20260819..20261074`，当前未生成 256 formal NPZ、formal artifact inventory、
+formal paired JSONL、formal aggregate 或 formal primary verdict，也未运行 Primary H=2、formal
+H=0、H sensitivity 或 stress sensitivity。本 checkpoint 不启动或解锁 formal data generation；
+不得记录 formal point estimate、LCB/UCB 或正式 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
+在有效 Formal H1 scientific gate 结果产生并完成解释前，不进入 prediction、forecast uncertainty、
+MAPPO 或 PyTorch/GPU training。
