@@ -308,3 +308,44 @@
 - 下一门禁：Formal H1 只能在本 docs-only checkpoint Commit/Push 完成、下一阶段 Formal H1
   execution preparation / audit gate 通过后，由用户明确授权启动；在有效 scientific gate 结果及
   解释完成前继续禁止 prediction、forecast uncertainty、MAPPO 与 PyTorch/GPU training。
+
+## D-037：接受 WP-02D3 Formal H1 execution hardening baseline
+
+- 状态：已接受
+- 稳定实现：WP-02D3 implementation Commit 与 Formal H1 accepted implementation SHA 均为
+  `1092d9c87bfff8ba6c1f2132734480112d7b5975`，准确定位是
+  `Formal H1 execution orchestration / persistence hardening`。它不改变 H1 科学规格、环境科学、
+  Reactive、Primary Oracle 或 D2 verifier。
+- SHA 规则：本次及未来 docs-only checkpoint Commit 是 accepted implementation 的合法
+  `docs/**` / `CHANGELOG_*` descendant，但不替代 accepted implementation SHA；未来 runner 的
+  `--accepted-implementation-sha` 必须继续使用 `1092d9c87bfff8ba6c1f2132734480112d7b5975`。
+- Private runner：正式入口为 private module
+  `fura_mappo.experiments._formal_h1_runner`，未修改 `experiments/__init__.py`，不构成 public API。
+  固定 spec 为 `configs/experiments/wp02d_h1.yaml`，固定 run root 为
+  `artifacts/wp02d_h1_formal_v1/`，其 traces、inventory、paired JSONL、aggregate 与 verdict 路径
+  均不得另设第二套正式位置。
+- Provenance hard gates：要求真实 repository root、branch `main`、clean working tree、
+  `actual HEAD == origin/main`、WP-02C stable 与 accepted implementation ancestry，以及 accepted
+  SHA 后仅有 docs/changelog changes；同时把实际 loaded Python code 绑定到当前 repo 的
+  `src/fura_mappo`。关键 publication 边界重复 revalidate provenance。
+- Restart/resume 与 no-overwrite：已有 inventory 时不再生成 trace，并 strict validate inventory
+  和全部 256 NPZ；inventory 不存在时，已存在 trace 只允许 provenance-bound strict reuse，缺失
+  trace 才可在重新验证 provenance 后 exactly-once no-overwrite 生成。任何 missing、invalid、
+  unknown 或 symlink evidence 均 hard fail，不自动删除、覆盖、修复或 replacement seed。
+- Strict persistence：paired JSONL、aggregate 与 verdict 均 strict canonical readback；aggregate
+  必须等于从 strict paired results 重新计算的 summary。`read_primary_verdict(...)` 可严格读取
+  `PROTOCOL_FAIL`，但 `require_locked_primary_verdict(...)` 永不允许其解锁 sensitivity。
+- Crash durability：protocol JSON/JSONL 与 no-overwrite NPZ 均在 temporary directory entry 消失
+  后 fsync parent；首次创建 run root 后 fsync `artifacts/`，首次创建 `traces/` 后 fsync run root。
+  这些持久化控制不改变 scientific content。
+- 接受证据：最终批准 `wp02d3-review-v4.patch` SHA-256 为
+  `f4dd19abd16723d19508b26f89ad1a93e4e4a1b468aa13a9785baa8ec86b82a9`，独立审查
+  BLOCKER 0、MAJOR 0、MINOR 0；GitHub Actions two checks passed；A100 server CPU acceptance
+  focused `207 passed in 16.87s`、full `720 passed in 34.31s`，Ruff、format 与 diff-check 通过，
+  最终工作树干净。以上不是 GPU 或 Formal H1 验收。
+- 当前科学状态：Formal H1 尚未运行，formal primary traces 为 `0 / 256`，formal controller
+  rollouts、inventory、paired results、aggregate、verdict 与 sensitivity 均为零。WP-02D1、D2、
+  D3 均 completed / accepted，但 WP-02D overall 仍在进行中。
+- 下一门禁：`Final Formal H1 execution-readiness freeze / runbook freeze`。该只读 freeze、docs
+  checkpoint Commit/Push 与用户明确授权全部完成前，不运行 Formal H1；在有效 scientific gate
+  outcome 完成解释前，不进入 prediction、forecast uncertainty、MAPPO 或 PyTorch/GPU training。

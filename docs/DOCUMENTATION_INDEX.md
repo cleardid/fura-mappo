@@ -13,11 +13,12 @@
 
 ## 当前工作包
 
-WP-02D overall 进行中。WP-02D1 protocol/statistics baseline 与 WP-02D2
-`bounded task-target root-information exhaustive diagnostic verifier` 均已完成并接受。当前下一阶段
-是 Formal H1 execution preparation / audit gate；Formal H1 尚未运行，formal primary traces 为
-`0 / 256`。Formal H1 只能在本 docs-only checkpoint Commit/Push 完成、execution-readiness audit
-通过后，由用户明确授权启动。
+WP-02D overall 进行中。WP-02D1 protocol/statistics baseline、WP-02D2
+`bounded task-target root-information exhaustive diagnostic verifier` 与 WP-02D3
+`Formal H1 execution orchestration / persistence hardening` 均已完成并接受。当前唯一下一阶段是
+`Final Formal H1 execution-readiness freeze / runbook freeze`；Formal H1 尚未运行，formal primary
+traces 为 `0 / 256`。Formal H1 只能在本 docs-only checkpoint Commit/Push、最终只读 freeze 与
+用户明确授权全部完成后启动。
 
 优先读取：
 
@@ -29,6 +30,7 @@ WP-02D overall 进行中。WP-02D1 protocol/statistics baseline 与 WP-02D2
 - `docs/WP02D_SPEC.md`
 - `CHANGELOG_WP02D1.md`
 - `CHANGELOG_WP02D2.md`
+- `CHANGELOG_WP02D3.md`
 - `docs/WP02A_SPEC.md`
 - `docs/WP02B_SPEC.md`
 - `docs/WP02C_SPEC.md`
@@ -38,6 +40,12 @@ WP-02D overall 进行中。WP-02D1 protocol/statistics baseline 与 WP-02D2
 - `src/fura_mappo/baselines/`
 
 ## WP-02 完成文档
+
+### WP-02D3
+
+- `docs/WP02D_SPEC.md`
+- `CHANGELOG_WP02D3.md`：记录 D3 execution/persistence hardening、独立 review、CI/A100 CPU
+  acceptance、accepted implementation SHA 规则与 Formal H1 未执行状态
 
 ### WP-02D2
 

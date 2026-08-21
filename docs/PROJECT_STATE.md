@@ -5,6 +5,8 @@
 ## 已验证稳定基线
 
 ```text
+WP-02D3 实现 Commit：1092d9c87bfff8ba6c1f2132734480112d7b5975
+WP-02D2 docs checkpoint：6c2e8c67598f0d2ceda727d3c975a18fa6037fdd
 WP-02D2 实现 Commit：cfab8c1b1981ef095d68969fff74faa2ac4f256d
 WP-02D1 实现 Commit：844de649c71e0a6a8fec6e1355cbf010db434f83
 WP-02D1 docs checkpoint：fe1b97496c937ec6f660c48419441eb9569e31ba
@@ -32,9 +34,10 @@ docs-only 收尾 Commit 不自引用自身 SHA；当前 HEAD 以 `git rev-parse 
 | WP-02A | 已完成 | 确定性资源服务环境；Mac、GitHub Actions、A100 验收通过 |
 | WP-02B | 已完成 | Reactive baseline；Mac、独立审查、GitHub Actions、A100 验收通过 |
 | WP-02C | 已完成 | Rolling True-future Oracle；Mac、独立审查、GitHub Actions、A100 验收通过 |
-| WP-02D | 进行中 | D1 protocol/statistics 与 D2 bounded verifier 均已接受；Formal H1 未运行 |
+| WP-02D | 进行中 | D1、D2、D3 均已接受；Formal H1 scientific gate 未运行 |
 | WP-02D1 | 已完成 | strict H1 preregistration、artifact/results/verdict audit chain、paired runner 与统计基线 |
 | WP-02D2 | 已完成 | bounded task-target root-information exhaustive diagnostic verifier 已接受 |
+| WP-02D3 | 已完成 | Formal H1 execution orchestration / persistence hardening 已接受 |
 
 ## WP-01 冻结接口与协议
 
@@ -377,7 +380,11 @@ CPU 验收：全部通过
 ```text
 Formal primary traces generated: 0 / 256
 Formal H1 controller rollouts: 0
-Formal experiment artifacts/results/verdict: 0
+Formal artifact inventory: 0
+Formal paired results: 0
+Formal aggregate: 0
+Formal verdict: 0
+Formal sensitivity: 0
 ```
 
 ## WP-02D2 冻结能力
@@ -487,20 +494,118 @@ final working tree: clean
 
 上述为 A100 CPU acceptance，不是 GPU test，未执行 PyTorch/GPU workload。
 
-## 下一步：Formal H1 execution preparation / audit gate
+## WP-02D3 冻结能力
 
-WP-02D1 与 WP-02D2 均已完成并接受，但 WP-02D overall 仍在进行中，因为 Formal H1 scientific
-gate 尚未执行。下一阶段是在生成任何正式 primary trace 前进行最后 execution-readiness / audit
-review，确认 accepted implementation ancestry、clean main、exact preregistered spec、正式 seed
-禁令解除前的人工确认、exact output paths / artifact root、provenance hard gate、no-overwrite policy、
-formal run command sequence，以及 sensitivity 仍锁定在 primary verdict 之后。
+WP-02D3 accepted implementation Commit 与 Formal H1 accepted implementation SHA：
+`1092d9c87bfff8ba6c1f2132734480112d7b5975`。准确定位是
+`Formal H1 execution orchestration / persistence hardening`；它不改变 H1 scientific
+specification、environment science、Reactive、Primary Oracle、D2 verifier 或 preregistration。
 
-Formal H1 只能在本 docs-only checkpoint Commit/Push 完成、下一阶段 execution-readiness audit
-通过后，由用户明确授权启动。本 checkpoint 不启动或解锁 formal data generation。当前 Formal H1
-仍未运行，formal primary traces 仍为 `0 / 256`，正式 seeds 仍为 `20260819..20261074`；未生成
-256 formal NPZ、formal artifact inventory、formal paired JSONL、formal aggregate 或 formal primary
-verdict，也未运行 formal H=0 set、formal H=2 primary rollout、H sensitivity 或 stress sensitivity。
-不得记录任何 formal point estimate、LCB/UCB 或 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
+最终实现精确修改以下 6 个文件：
+
+```text
+src/fura_mappo/demand/serialization.py
+src/fura_mappo/experiments/h1_gate.py
+src/fura_mappo/experiments/_formal_h1_runner.py
+tests/test_demand_serialization.py
+tests/test_h1_gate.py
+tests/test_formal_h1_runner.py
+```
+
+冻结能力包括：
+
+- private `fura_mappo.experiments._formal_h1_runner`，不进入 public experiments API
+- real repo root、exact `main`、clean tree、HEAD/origin、accepted/WP-02C ancestry 与
+  docs-only descendant Git provenance hard gates，并在关键 publication 边界重复 revalidate
+- actual loaded Python modules 必须来自 current repo `src/fura_mappo` 的 code-path binding
+- 唯一固定 spec、formal run root、traces、inventory、paired JSONL、aggregate 与 verdict 路径
+- path confinement、symlink/unknown evidence rejection 与不自动删除、覆盖、修复的 no-overwrite
+  policy
+- provenance-bound exact 256 trace plan 与 strict restart/resume；无 replacement seed
+- H=0 invariant、canonical mechanism preflight、Primary H=2 paired rollouts 的冻结 pipeline order
+- strict canonical paired JSONL、aggregate 与 verdict readback；disk summary 必须等于 recomputation
+- `PROTOCOL_FAIL` strict verdict read 与 sensitivity unlock guard 分离；PROTOCOL_FAIL 永不解锁
+- protocol JSON/JSONL、NPZ hard-link publication 与首次 formal directory creation 的 crash durability
+- final verdict strict readback 前不输出 per-seed `D_i` 或 provisional scientific statistics/verdict
+
+固定 formal 路径：
+
+```text
+spec:       configs/experiments/wp02d_h1.yaml
+run root:   artifacts/wp02d_h1_formal_v1/
+traces:     artifacts/wp02d_h1_formal_v1/traces/
+inventory:  artifacts/wp02d_h1_formal_v1/artifact_inventory.json
+paired:     artifacts/wp02d_h1_formal_v1/primary_paired_results.jsonl
+aggregate:  artifacts/wp02d_h1_formal_v1/primary_aggregate.json
+verdict:    artifacts/wp02d_h1_formal_v1/primary_verdict.json
+```
+
+未来调用必须继续传 accepted implementation SHA：
+
+```bash
+python -m fura_mappo.experiments._formal_h1_runner \
+  --accepted-implementation-sha 1092d9c87bfff8ba6c1f2132734480112d7b5975
+```
+
+未来 docs checkpoint Commit 是该 implementation 的合法 docs-only descendant，不替代 accepted
+implementation SHA。本 checkpoint 不执行上述命令。
+
+## WP-02D3 验收
+
+### 独立 patch 审查
+
+- 最终批准 patch：`wp02d3-review-v4.patch`
+- SHA-256：`f4dd19abd16723d19508b26f89ad1a93e4e4a1b468aa13a9785baa8ec86b82a9`
+- 120,831 bytes；6 diff sections；6 files changed；2,718 insertions；80 deletions
+- 结论：BLOCKER 0、MAJOR 0、MINOR 0
+- v1-v4 发现项均为提交前质量关口识别并修复的 execution-readiness 问题，不是 Formal H1 或
+  scientific failure
+
+### GitHub Actions
+
+- Commit：`1092d9c87bfff8ba6c1f2132734480112d7b5975`
+- two Actions/checks passed
+- 未记录未经确认的 run number、job ID、duration 或 workflow name
+
+### A100 server CPU acceptance
+
+```text
+Commit: 1092d9c87bfff8ba6c1f2132734480112d7b5975
+Focused WP-02D3 acceptance: 207 passed in 16.87s
+Full CPU: 720 passed in 34.31s
+Ruff: All checks passed!
+Format: 85 files already formatted
+git diff --check: passed
+Final working tree: clean
+```
+
+这是 A100 server CPU acceptance，不是 PyTorch、CUDA、GPU test 或 Formal H1 execution。
+
+冻结 scientific identities 保持不变：
+
+```text
+H1 spec SHA-256:
+fc719e4634ab13ba55d0b95e63497688b3ab07c259d1421c5ed0c468cec3fade
+
+Primary environment config SHA-256:
+d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1
+```
+
+## 下一步：Final Formal H1 execution-readiness freeze / runbook freeze
+
+WP-02D1、WP-02D2 与 WP-02D3 均已完成并接受，但 WP-02D overall 仍在进行中，因为 Formal H1
+scientific gate 尚未执行。下一阶段是在生成任何正式 primary trace 前进行最终只读
+execution-readiness/runbook freeze，验证本 docs checkpoint 已 Push、current `main` clean、
+HEAD 等于 `origin/main`、`1092d9c...` ancestry、accepted SHA 后仅 docs/changelog changes、actual
+loaded code path、exact spec/environment identities、formal-data-zero、exact frozen invocation 与
+用户明确授权。
+
+Formal H1 只能在本 docs-only checkpoint Commit/Push、最终 freeze 与用户明确授权全部完成后启动。
+本 checkpoint 不启动或解锁 formal data generation。当前 Formal H1 仍未运行，formal primary
+traces 仍为 `0 / 256`，正式 seeds 仍为 `20260819..20261074`；未生成 256 formal NPZ、formal
+artifact inventory、formal paired JSONL、formal aggregate 或 formal primary verdict，也未运行
+formal H=0 set、formal H=2 primary rollout、H sensitivity 或 stress sensitivity。不得记录任何
+formal point estimate、LCB/UCB 或 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
 
 在 Formal H1 scientific gate 产生有效结果并完成解释前，继续禁止进入 prediction、forecast
 uncertainty、MAPPO、PyTorch/GPU training 或 ID/OOD main experiment。

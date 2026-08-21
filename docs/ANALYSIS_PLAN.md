@@ -1,7 +1,7 @@
 # 统计分析计划
 
-状态：WP-02D1 primary H1 gate 已预注册冻结并实现；WP-02D2 bounded diagnostic verifier 已完成并
-接受。formal data 尚未生成，formal H1 尚未运行。
+状态：WP-02D1 primary H1 gate、WP-02D2 bounded diagnostic verifier 与 WP-02D3 Formal H1
+execution hardening 均已完成并接受。formal data 尚未生成，formal H1 尚未运行。
 
 ## 第一科学门槛
 
@@ -98,20 +98,59 @@ differences、无 protocol failure，以及每条 result 的 spec/artifact/envir
 ```text
 validated H1 spec
 -> experiment_spec_sha256
+-> exact planned artifacts
+-> provenance-bound NPZ artifacts
 -> frozen ArtifactInventory
 -> artifact_inventory_sha256
--> exact ArtifactInventoryEntry
--> safely loaded artifact
--> artifact config/content hashes
+-> strict artifact readback
+-> H=0 invariant
+-> canonical mechanism preflight
 -> provenance-bound PairedTraceResult
+-> strict paired JSONL readback
 -> paired_results_sha256
--> H1GateSummary
+-> recomputed H1GateSummary
+-> strict aggregate readback
 -> locked primary verdict
+-> strict verdict readback
+-> optional sensitivity unlock guard
 ```
 
 Verdict 必须绑定 exact spec/inventory/results/provenance；formal sensitivity 必须重新验证该完整
 链，旧 verdict 不能解锁另一组 results。任何生成、读取、hash、配对或 provenance 失败均 hard
 fail，不得删除 seed、替换 seed 或静默排除。
+
+## Formal execution governance
+
+WP-02D3 accepted implementation SHA 冻结为
+`1092d9c87bfff8ba6c1f2132734480112d7b5975`。未来 docs-only checkpoint Commit 只是它的合法
+docs descendant，不替代 accepted implementation SHA。private runner 的未来固定调用是：
+
+```bash
+python -m fura_mappo.experiments._formal_h1_runner \
+  --accepted-implementation-sha 1092d9c87bfff8ba6c1f2132734480112d7b5975
+```
+
+本 checkpoint 不执行。runner 固定使用 `configs/experiments/wp02d_h1.yaml` 与唯一 formal root
+`artifacts/wp02d_h1_formal_v1/`，并固定 `traces/`、artifact inventory、primary paired JSONL、
+aggregate 与 verdict 路径。不存在第二套 formal evidence path。
+
+执行前及关键 publication 边界必须验证真实 repo root、`main`、clean working tree、
+`actual HEAD == origin/main`、accepted implementation/WP-02C stable ancestry、accepted SHA 后仅
+docs/changelog changes，以及实际 loaded Python code 来自当前 repo 的 `src/fura_mappo`。
+
+Restart/resume 必须是 provenance-bound、strict、no-overwrite：inventory 已存在时不生成 trace；
+inventory 不存在时只复用严格有效的既有 trace，缺失 trace 才可在重新验证 provenance 后生成
+exactly once；invalid、missing、unknown 或 symlink evidence hard fail，不自动修复、删除或替换。
+paired JSONL、aggregate 与 verdict 均 strict canonical readback，disk aggregate 必须等于从 strict
+paired results 重新计算的 summary。`PROTOCOL_FAIL` verdict 可 strict read，但不能通过 sensitivity
+unlock guard。
+
+Protocol JSON/JSONL、NPZ no-overwrite 与首次 formal directory creation 均包含 parent-directory
+fsync durability。这些 execution/persistence controls 不改变本计划冻结的 hypothesis、estimand、
+bootstrap、gate 或 scientific identities。H1 spec SHA-256 继续为
+`fc719e4634ab13ba55d0b95e63497688b3ab07c259d1421c5ed0c468cec3fade`，Primary environment
+config SHA-256 继续为
+`d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1`。
 
 ## Negative-result 诊断
 
@@ -151,13 +190,16 @@ optimal 或 heuristic adequacy proven，两个 label 均不能改变冻结 prima
 ```text
 Formal primary traces generated: 0 / 256
 Formal H1 controller rollouts: 0
-Formal experiment artifacts/results/verdict: 0
+Formal artifact inventory: 0
+Formal paired results: 0
+Formal aggregate: 0
+Formal verdict: 0
+Formal sensitivity: 0
 ```
 
-WP-02D2 完成实现、完整候选 patch 审查、Commit/Push、GitHub Actions 与 Mac/A100 acceptance
-均已完成；WP-02D overall 仍在进行中。下一阶段是 Formal H1 execution preparation / audit gate，
-不是 prediction 或 MAPPO。Formal H1 只能在本 docs-only checkpoint Commit/Push 完成、该
-execution-readiness audit 通过后，由用户明确授权启动。
+WP-02D1、WP-02D2 与 WP-02D3 均已完成并接受；WP-02D overall 仍在进行中。下一阶段是
+`Final Formal H1 execution-readiness freeze / runbook freeze`，不是 prediction 或 MAPPO。Formal
+H1 只能在本 docs-only checkpoint Commit/Push、最终只读 freeze 与用户明确授权全部完成后启动。
 
 正式 seeds 仍为 `20260819..20261074`，当前未生成 256 formal NPZ、formal artifact inventory、
 formal paired JSONL、formal aggregate 或 formal primary verdict，也未运行 Primary H=2、formal
