@@ -327,6 +327,43 @@ def test_existing_targets_overwrite_and_symlink_policy(tmp_path: Path) -> None:
         save_demand_trace(dangling, _trace(), resolved_config=_config())
 
 
+def test_no_overwrite_unlinks_temp_before_parent_fsync(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "trace.npz"
+    fsynced: list[Path] = []
+
+    def check_publication(parent: Path) -> None:
+        assert path.exists()
+        assert not any(parent.glob(f".{path.name}.*.tmp"))
+        fsynced.append(parent)
+
+    monkeypatch.setattr(serialization_module, "_fsync_parent", check_publication)
+    save_demand_trace(path, _trace(), resolved_config=_config())
+
+    assert fsynced == [tmp_path]
+    _assert_traces_equal(load_demand_trace(path).trace, _trace())
+
+
+def test_parent_fsync_failure_preserves_published_target_without_temp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "trace.npz"
+
+    def fail_after_publication(parent: Path) -> None:
+        assert path.exists()
+        assert not any(parent.glob(f".{path.name}.*.tmp"))
+        raise OSError("parent fsync")
+
+    monkeypatch.setattr(serialization_module, "_fsync_parent", fail_after_publication)
+    with pytest.raises(OSError, match="parent fsync"):
+        save_demand_trace(path, _trace(), resolved_config=_config())
+
+    assert path.exists()
+    assert not list(tmp_path.glob(".trace.npz.*.tmp"))
+    _assert_traces_equal(load_demand_trace(path).trace, _trace())
+
+
 def test_atomic_write_link_and_replace_failures_cleanup_and_preserve_target(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

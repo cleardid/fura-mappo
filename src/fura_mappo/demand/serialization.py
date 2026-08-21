@@ -411,6 +411,7 @@ def save_demand_trace(
         prefix=f".{target.name}.", suffix=".tmp", dir=target.parent
     )
     temporary = Path(temporary_name)
+    temporary_consumed = False
     try:
         with os.fdopen(descriptor, "w+b") as stream:
             _write_npz(stream, complete_arrays)
@@ -422,15 +423,19 @@ def save_demand_trace(
             if target.is_symlink():
                 raise ValueError("输出目标不能是符号链接")
             os.replace(temporary, target)
+            temporary_consumed = True
         else:
             os.link(temporary, target)
+            temporary.unlink()
+            temporary_consumed = True
         _fsync_parent(target.parent)
         return target
     finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        if not temporary_consumed:
+            try:
+                temporary.unlink()
+            except OSError:
+                pass
 
 
 def _read_npy_header(stream: BinaryIO) -> tuple[tuple[int, ...], bool, np.dtype[object]]:

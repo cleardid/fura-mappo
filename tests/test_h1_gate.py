@@ -5,8 +5,10 @@ import json
 import math
 import random
 import subprocess
-from dataclasses import replace
+from collections.abc import Callable
+from dataclasses import asdict, replace
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pytest
@@ -41,6 +43,7 @@ from fura_mappo.experiments import (
 from fura_mappo.experiments.h1_gate import (
     ArtifactInventory,
     ArtifactInventoryEntry,
+    ArtifactPlanEntry,
     FormalProvenance,
     H1GateSummary,
     H1ProtocolError,
@@ -48,14 +51,18 @@ from fura_mappo.experiments.h1_gate import (
     build_primary_artifact_inventory,
     build_primary_demand_config,
     build_primary_environment_config,
+    build_provenance_bound_artifact_entry,
     compute_environment_config_hash,
     evaluate_primary_gate,
     plan_primary_artifacts,
+    read_h1_summary,
+    read_paired_jsonl,
     read_primary_verdict,
     require_locked_primary_verdict,
     validate_canonical_mechanism,
     validate_formal_provenance,
     validate_h0_invariant,
+    validate_primary_paired_results,
     write_artifact_inventory,
     write_canonical_json,
     write_h1_summary,
@@ -242,6 +249,19 @@ def _formal_results(
         )
         for entry in inventory.entries
     )
+
+
+def _write_result_rows(path: Path, rows: list[dict[str, object]]) -> Path:
+    payload = b"\n".join(h1_module._canonical_json_bytes(row) for row in rows) + b"\n"
+    path.write_bytes(payload)
+    return path
+
+
+def _formal_result_rows(
+    spec: H1GateSpec,
+    inventory: ArtifactInventory,
+) -> list[dict[str, object]]:
+    return [h1_module.paired_result_to_dict(result) for result in _formal_results(spec, inventory)]
 
 
 def _formal_provenance(spec: H1GateSpec) -> FormalProvenance:
@@ -988,6 +1008,335 @@ def test_canonical_json_jsonl_no_overwrite_and_no_nan(tmp_path: Path) -> None:
     assert json.loads(summary_path.read_text(encoding="utf-8"))["verdict"] == "PASS"
 
 
+def test_read_paired_jsonl_canonical_round_trip_and_hash(tmp_path: Path) -> None:
+    spec = load_h1_gate_spec(_SPEC_PATH)
+    inventory = _formal_inventory(spec)
+    results = _formal_results(spec, inventory)
+    path = write_paired_jsonl(tmp_path / "results.jsonl", results)
+
+    loaded = read_paired_jsonl(path, spec, inventory)
+
+    assert loaded == results
+    assert len(loaded) == 256
+    assert compute_paired_results_hash(loaded) == compute_paired_results_hash(results)
+    validate_primary_paired_results(loaded, spec, inventory)
+    with pytest.raises(TypeError, match="bytes"):
+        read_paired_jsonl(bytes(path), spec, inventory)  # type: ignore[arg-type]
+
+
+def test_read_paired_jsonl_rejects_strict_json_and_canonical_violations(
+    tmp_path: Path,
+) -> None:
+    spec = load_h1_gate_spec(_SPEC_PATH)
+    inventory = _formal_inventory(spec)
+    rows = _formal_result_rows(spec, inventory)
+    canonical = _write_result_rows(tmp_path / "canonical.jsonl", rows).read_bytes()
+    first, remainder = canonical.split(b"\n", 1)
+
+    duplicate = first.replace(
+        b'"seed":20260819',
+        b'"seed":20260819,"seed":20260819',
+        1,
+    )
+    (tmp_path / "duplicate.jsonl").write_bytes(duplicate + b"\n" + remainder)
+    with pytest.raises(H1ProtocolError, match="重复键"):
+        read_paired_jsonl(tmp_path / "duplicate.jsonl", spec, inventory)
+
+    for name, constant in (("nan", math.nan), ("infinity", math.inf)):
+        changed = _formal_result_rows(spec, inventory)
+        changed[0]["primary_difference"] = constant
+        payload = "\n".join(
+            json.dumps(row, allow_nan=True, sort_keys=True, separators=(",", ":"))
+            for row in changed
+        )
+        (tmp_path / f"{name}.jsonl").write_text(payload + "\n", encoding="utf-8")
+        with pytest.raises(H1ProtocolError, match="不允许常量"):
+            read_paired_jsonl(tmp_path / f"{name}.jsonl", spec, inventory)
+
+    (tmp_path / "blank.jsonl").write_bytes(first + b"\n\n" + remainder)
+    with pytest.raises(H1ProtocolError, match="blank"):
+        read_paired_jsonl(tmp_path / "blank.jsonl", spec, inventory)
+
+    (tmp_path / "utf8.jsonl").write_bytes(b"\xff\n" + remainder)
+    with pytest.raises(H1ProtocolError, match="UTF-8"):
+        read_paired_jsonl(tmp_path / "utf8.jsonl", spec, inventory)
+
+    (tmp_path / "noncanonical.jsonl").write_bytes(b" " + first + b"\n" + remainder)
+    with pytest.raises(H1ProtocolError, match="canonical"):
+        read_paired_jsonl(tmp_path / "noncanonical.jsonl", spec, inventory)
+
+    overflow = first.replace(b'"primary_difference":0.03', b'"primary_difference":1e999', 1)
+    assert overflow != first
+    (tmp_path / "overflow.jsonl").write_bytes(overflow + b"\n" + remainder)
+    with pytest.raises(H1ProtocolError, match="无法 canonical 编码"):
+        read_paired_jsonl(tmp_path / "overflow.jsonl", spec, inventory)
+
+    surrogate = first.replace(
+        b'"trace_id":"trace_20260819.npz"',
+        b'"trace_id":"\\ud800"',
+        1,
+    )
+    assert surrogate != first
+    (tmp_path / "surrogate.jsonl").write_bytes(surrogate + b"\n" + remainder)
+    with pytest.raises(H1ProtocolError, match="无法 canonical 编码"):
+        read_paired_jsonl(tmp_path / "surrogate.jsonl", spec, inventory)
+
+
+def test_read_paired_jsonl_rejects_schema_scalar_and_nested_metric_errors(
+    tmp_path: Path,
+) -> None:
+    spec = load_h1_gate_spec(_SPEC_PATH)
+    inventory = _formal_inventory(spec)
+
+    cases: list[tuple[str, Callable[[list[dict[str, object]]], None], str]] = []
+
+    def wrong_schema(rows: list[dict[str, object]]) -> None:
+        rows[0]["schema"] = "wrong"
+
+    def wrong_version(rows: list[dict[str, object]]) -> None:
+        rows[0]["version"] = 2
+
+    def unknown_field(rows: list[dict[str, object]]) -> None:
+        rows[0]["unknown"] = 1
+
+    def missing_field(rows: list[dict[str, object]]) -> None:
+        rows[0].pop("trace_id")
+
+    def bool_seed(rows: list[dict[str, object]]) -> None:
+        rows[0]["seed"] = True
+
+    def nested_missing(rows: list[dict[str, object]]) -> None:
+        metrics = cast(dict[str, object], rows[0]["reactive_metrics"])
+        metrics.pop("arrived")
+
+    cases.extend(
+        [
+            ("schema", wrong_schema, "schema/version"),
+            ("version", wrong_version, "schema/version"),
+            ("unknown", unknown_field, "字段集合"),
+            ("missing", missing_field, "字段集合"),
+            ("bool", bool_seed, "布尔|不能是布尔"),
+            ("nested", nested_missing, "reactive_metrics 字段集合"),
+        ]
+    )
+    for name, mutate, message in cases:
+        rows = _formal_result_rows(spec, inventory)
+        mutate(rows)
+        path = _write_result_rows(tmp_path / f"{name}.jsonl", rows)
+        with pytest.raises(H1ProtocolError, match=message):
+            read_paired_jsonl(path, spec, inventory)
+
+
+def test_read_paired_jsonl_rejects_formal_identity_and_protocol_mismatches(
+    tmp_path: Path,
+) -> None:
+    spec = load_h1_gate_spec(_SPEC_PATH)
+    inventory = _formal_inventory(spec)
+
+    def assert_rejected(name: str, rows: list[dict[str, object]], message: str) -> None:
+        path = _write_result_rows(tmp_path / f"{name}.jsonl", rows)
+        with pytest.raises(H1ProtocolError, match=message):
+            read_paired_jsonl(path, spec, inventory)
+
+    rows = _formal_result_rows(spec, inventory)
+    rows[0], rows[1] = rows[1], rows[0]
+    assert_rejected("order", rows, "seed 集或顺序")
+
+    rows = _formal_result_rows(spec, inventory)
+    rows[1] = dict(rows[0])
+    assert_rejected("duplicate", rows, "seed 集或顺序|重复")
+
+    assert_rejected("missing", _formal_result_rows(spec, inventory)[:-1], "行数")
+
+    mutations = (
+        ("horizon", "horizon", 1, "horizon"),
+        ("spec", "experiment_spec_sha256", "a" * 64, "spec hash"),
+        ("config", "artifact_config_sha256", "a" * 64, "config hash"),
+        ("content", "artifact_content_sha256", "a" * 64, "content hash"),
+        ("environment", "environment_config_sha256", "a" * 64, "environment"),
+        ("difference", "primary_difference", 0.5, "primary difference"),
+        ("protocol", "protocol_failure", "broken", "protocol failure"),
+    )
+    for name, field_name, replacement, message in mutations:
+        rows = _formal_result_rows(spec, inventory)
+        rows[0][field_name] = replacement
+        assert_rejected(name, rows, message)
+
+    rows = _formal_result_rows(spec, inventory)
+    rows[0]["oracle_metrics"] = asdict(_metrics(99, 53))
+    assert_rejected("arrived", rows, "arrived denominator")
+
+
+def test_read_paired_jsonl_rejects_symlink_and_oversized_file(tmp_path: Path) -> None:
+    spec = load_h1_gate_spec(_SPEC_PATH)
+    inventory = _formal_inventory(spec)
+    actual = write_paired_jsonl(
+        tmp_path / "actual.jsonl",
+        _formal_results(spec, inventory),
+    )
+    link = tmp_path / "link.jsonl"
+    link.symlink_to(actual)
+    with pytest.raises(H1ProtocolError, match="符号链接"):
+        read_paired_jsonl(link, spec, inventory)
+
+    oversized = tmp_path / "oversized.jsonl"
+    oversized.write_bytes(b"x" * (h1_module._MAX_PROTOCOL_JSON_BYTES + 1))
+    with pytest.raises(H1ProtocolError, match="大小上限"):
+        read_paired_jsonl(oversized, spec, inventory)
+
+
+def test_read_h1_summary_round_trip_all_verdicts(tmp_path: Path) -> None:
+    spec = load_h1_gate_spec(_SPEC_PATH)
+    passed = _formal_summary()
+    failed = replace(
+        passed,
+        verdict=H1Verdict.FAIL,
+        point_estimate=0.0,
+        one_sided_lcb=-0.1,
+        one_sided_ucb=0.01,
+        two_sided_interval=(-0.15, 0.015),
+    )
+    inconclusive = replace(
+        passed,
+        verdict=H1Verdict.INCONCLUSIVE,
+        point_estimate=0.01,
+        one_sided_lcb=-0.01,
+        one_sided_ucb=0.03,
+        two_sided_interval=(-0.02, 0.04),
+    )
+    protocol_fail = h1_module._protocol_fail_summary(spec, ("broken",))
+
+    for summary in (passed, failed, inconclusive, protocol_fail):
+        path = write_h1_summary(tmp_path / f"{summary.verdict.value}.json", summary)
+        assert read_h1_summary(path) == summary
+
+
+def test_read_h1_summary_rejects_strict_json_and_schema_errors(tmp_path: Path) -> None:
+    summary = _formal_summary()
+    payload = h1_module.summary_to_dict(summary)
+
+    unknown = dict(payload, unknown=1)
+    for name, changed, message in (
+        ("unknown", unknown, "字段集合"),
+        ("missing", {key: value for key, value in payload.items() if key != "verdict"}, "字段集合"),
+        ("bool", dict(payload, n_valid=True), "布尔"),
+    ):
+        path = tmp_path / f"{name}.json"
+        path.write_bytes(h1_module._canonical_json_bytes(changed) + b"\n")
+        with pytest.raises(H1ProtocolError, match=message):
+            read_h1_summary(path)
+
+    duplicate = h1_module._canonical_json_bytes(payload).replace(
+        b'"version":1',
+        b'"version":1,"version":1',
+    )
+    (tmp_path / "duplicate-summary.json").write_bytes(duplicate + b"\n")
+    with pytest.raises(H1ProtocolError, match="重复键"):
+        read_h1_summary(tmp_path / "duplicate-summary.json")
+
+    nonfinite = dict(payload, point_estimate=math.nan)
+    (tmp_path / "nonfinite-summary.json").write_text(
+        json.dumps(nonfinite, allow_nan=True, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(H1ProtocolError, match="不允许常量"):
+        read_h1_summary(tmp_path / "nonfinite-summary.json")
+
+    (tmp_path / "noncanonical-summary.json").write_text(
+        json.dumps(payload, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(H1ProtocolError, match="canonical"):
+        read_h1_summary(tmp_path / "noncanonical-summary.json")
+
+    canonical = h1_module._canonical_json_bytes(payload) + b"\n"
+    overflow = canonical.replace(b'"point_estimate":0.03', b'"point_estimate":1e999', 1)
+    assert overflow != canonical
+    (tmp_path / "overflow-summary.json").write_bytes(overflow)
+    with pytest.raises(H1ProtocolError, match="无法 canonical 编码"):
+        read_h1_summary(tmp_path / "overflow-summary.json")
+
+
+def test_provenance_bound_artifact_entry_uses_loaded_manifest_not_caller_hashes(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    spec = load_h1_gate_spec(_SPEC_PATH)
+    plan = ArtifactPlanEntry(primary_seeds(spec)[0], f"trace_{primary_seeds(spec)[0]}.npz")
+    provenance = _formal_provenance(spec)
+    resolved_config = build_primary_demand_config(spec, plan.seed)
+    trace = _trace(num_steps=256)
+    manifest = {
+        "seed": plan.seed,
+        "process_type": "drifting_hotspot",
+        "resolved_config": resolved_config,
+        "config_sha256": h1_module.compute_config_hash(resolved_config),
+        "content_sha256": "c" * 64,
+        "start_step": 0,
+        "num_steps": 256,
+        "num_events": 0,
+        "git_commit": provenance.actual_head,
+        "git_dirty": False,
+    }
+    artifact = DemandTraceArtifact(trace, manifest)
+    monkeypatch.setattr(h1_module, "load_demand_trace", lambda path: artifact)
+
+    entry = build_provenance_bound_artifact_entry(
+        spec,
+        plan,
+        tmp_path / plan.relative_path,
+        provenance,
+    )
+    assert entry.config_sha256 == manifest["config_sha256"]
+    assert entry.content_sha256 == manifest["content_sha256"]
+
+    bad_manifest = dict(manifest, git_commit="d" * 40)
+    monkeypatch.setattr(
+        h1_module,
+        "load_demand_trace",
+        lambda path: DemandTraceArtifact(trace, bad_manifest),
+    )
+    with pytest.raises(H1ProtocolError, match="execution HEAD"):
+        build_provenance_bound_artifact_entry(
+            spec,
+            plan,
+            tmp_path / plan.relative_path,
+            provenance,
+        )
+
+
+def test_protocol_json_parent_fsync_and_exception_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    calls: list[tuple[str, object]] = []
+    with monkeypatch.context() as scoped:
+        scoped.setattr(h1_module.os, "open", lambda path, flags: 91)
+        scoped.setattr(
+            h1_module.os,
+            "fsync",
+            lambda descriptor: calls.append(("fsync", descriptor)),
+        )
+        scoped.setattr(
+            h1_module.os,
+            "close",
+            lambda descriptor: calls.append(("close", descriptor)),
+        )
+        h1_module._fsync_protocol_parent(tmp_path)
+    assert calls == [("fsync", 91), ("close", 91)]
+
+    def fail_parent(parent: Path) -> None:
+        assert not tuple(parent.glob(".published.json.*.tmp"))
+        raise OSError("directory fsync failed")
+
+    monkeypatch.setattr(h1_module, "_fsync_protocol_parent", fail_parent)
+    target = tmp_path / "published.json"
+    with pytest.raises(OSError, match="fsync"):
+        write_canonical_json(target, {"value": 1})
+    assert target.is_file()
+    assert not tuple(tmp_path.glob(".published.json.*.tmp"))
+
+
 def test_output_rejects_symlink_target(tmp_path: Path) -> None:
     actual = tmp_path / "actual.json"
     actual.write_text("{}\n", encoding="utf-8")
@@ -1049,6 +1398,14 @@ def test_verdict_tamper_and_protocol_fail_do_not_unlock_sensitivity(tmp_path: Pa
         results_hash,
         provenance,
     )
+    loaded_failed = read_primary_verdict(
+        failed_path,
+        expected_spec_sha256=spec.sha256,
+        expected_artifact_inventory_sha256=inventory_hash,
+        expected_paired_results_sha256=results_hash,
+        expected_formal_provenance=provenance,
+    )
+    assert loaded_failed["summary"]["verdict"] == "PROTOCOL_FAIL"  # type: ignore[index]
     with pytest.raises(H1ProtocolError, match="PROTOCOL_FAIL"):
         require_locked_primary_verdict(
             failed_path,
@@ -1069,10 +1426,104 @@ def test_verdict_tamper_and_protocol_fail_do_not_unlock_sensitivity(tmp_path: Pa
     )
     payload = json.loads(path.read_text(encoding="utf-8"))
     payload["summary"]["point_estimate"] = 9.0
-    path.write_text(json.dumps(payload), encoding="utf-8")
+    path.write_bytes(h1_module._canonical_json_bytes(payload) + b"\n")
     with pytest.raises(H1ProtocolError, match="hash"):
         read_primary_verdict(
             path,
+            expected_spec_sha256=spec.sha256,
+            expected_artifact_inventory_sha256=inventory_hash,
+            expected_paired_results_sha256=results_hash,
+            expected_formal_provenance=provenance,
+        )
+
+
+def test_primary_verdict_canonical_round_trip_all_verdicts(tmp_path: Path) -> None:
+    spec = load_h1_gate_spec(_SPEC_PATH)
+    _, _, inventory_hash, results_hash, provenance = _formal_verdict_context(spec)
+    passed = _formal_summary()
+    failed = replace(
+        passed,
+        verdict=H1Verdict.FAIL,
+        point_estimate=0.0,
+        one_sided_lcb=-0.1,
+        one_sided_ucb=0.01,
+        two_sided_interval=(-0.15, 0.015),
+    )
+    inconclusive = replace(
+        passed,
+        verdict=H1Verdict.INCONCLUSIVE,
+        point_estimate=0.01,
+        one_sided_lcb=-0.01,
+        one_sided_ucb=0.03,
+        two_sided_interval=(-0.02, 0.04),
+    )
+    protocol_fail = h1_module._protocol_fail_summary(spec, ("broken",))
+
+    for summary in (passed, failed, inconclusive, protocol_fail):
+        path = write_primary_verdict(
+            tmp_path / f"{summary.verdict.value}.json",
+            summary,
+            spec.sha256,
+            inventory_hash,
+            results_hash,
+            provenance,
+        )
+        loaded = read_primary_verdict(
+            path,
+            expected_spec_sha256=spec.sha256,
+            expected_artifact_inventory_sha256=inventory_hash,
+            expected_paired_results_sha256=results_hash,
+            expected_formal_provenance=provenance,
+        )
+        assert loaded["summary"]["verdict"] == summary.verdict.value  # type: ignore[index]
+
+
+def test_primary_verdict_rejects_noncanonical_file_and_embedded_scalar_type_drift(
+    tmp_path: Path,
+) -> None:
+    spec = load_h1_gate_spec(_SPEC_PATH)
+    _, _, inventory_hash, results_hash, provenance = _formal_verdict_context(spec)
+    path = write_primary_verdict(
+        tmp_path / "verdict.json",
+        _formal_summary(),
+        spec.sha256,
+        inventory_hash,
+        results_hash,
+        provenance,
+    )
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    with pytest.raises(H1ProtocolError, match="canonical"):
+        read_primary_verdict(
+            path,
+            expected_spec_sha256=spec.sha256,
+            expected_artifact_inventory_sha256=inventory_hash,
+            expected_paired_results_sha256=results_hash,
+            expected_formal_provenance=provenance,
+        )
+
+    canonical_path = write_primary_verdict(
+        tmp_path / "scalar-type.json",
+        _formal_summary(),
+        spec.sha256,
+        inventory_hash,
+        results_hash,
+        provenance,
+    )
+    payload = json.loads(canonical_path.read_text(encoding="utf-8"))
+    completed = payload["summary"]["secondary"]["completed"]
+    assert isinstance(completed["reactive_mean"], float)
+    completed["reactive_mean"] = int(completed["reactive_mean"])
+    without_hash = dict(payload)
+    without_hash.pop("payload_sha256")
+    payload["payload_sha256"] = hashlib.sha256(
+        h1_module._canonical_json_bytes(without_hash)
+    ).hexdigest()
+    canonical_path.write_bytes(h1_module._canonical_json_bytes(payload) + b"\n")
+    with pytest.raises(H1ProtocolError, match="writer canonical"):
+        read_primary_verdict(
+            canonical_path,
             expected_spec_sha256=spec.sha256,
             expected_artifact_inventory_sha256=inventory_hash,
             expected_paired_results_sha256=results_hash,

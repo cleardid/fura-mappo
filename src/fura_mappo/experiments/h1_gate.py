@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import math
@@ -10,7 +11,7 @@ import re
 import subprocess
 import tempfile
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from enum import Enum
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
@@ -720,6 +721,71 @@ def _load_validated_artifact_entry(
     if artifact.trace.counts.shape[0] != expected_num_steps:
         raise H1ProtocolError("artifact trace num_steps 与 protocol 不一致")
     return artifact
+
+
+def build_provenance_bound_artifact_entry(
+    spec: H1GateSpec,
+    plan: ArtifactPlanEntry,
+    artifact_path: str | os.PathLike[str],
+    formal_provenance: FormalProvenance,
+) -> ArtifactInventoryEntry:
+    """从已回读 artifact 构造与正式 spec/Git provenance 绑定的 inventory entry。"""
+
+    if not isinstance(spec, H1GateSpec):
+        raise TypeError("spec 必须是 H1GateSpec")
+    if not isinstance(plan, ArtifactPlanEntry):
+        raise TypeError("plan 必须是 ArtifactPlanEntry")
+    if plan not in plan_primary_artifacts(spec):
+        raise H1ProtocolError("artifact plan entry 不属于冻结 primary plan")
+    _validate_verdict_formal_provenance(formal_provenance, spec.sha256)
+    if formal_provenance.wp02c_stable_sha != spec.wp02c_stable_sha:
+        raise H1ProtocolError("formal provenance WP-02C stable SHA 不匹配")
+
+    target = _coerce_output_path(artifact_path)
+    if target.name != plan.relative_path:
+        raise H1ProtocolError("artifact path 与冻结 plan filename 不匹配")
+    if target.is_symlink():
+        raise H1ProtocolError("artifact 不能是符号链接")
+    try:
+        artifact = load_demand_trace(target)
+    except (OSError, TypeError, ValueError) as error:
+        raise H1ProtocolError(f"artifact 严格回读失败：{error}") from error
+
+    manifest = artifact.manifest
+    expected_config = build_primary_demand_config(spec, plan.seed)
+    if _plain_tree(manifest["resolved_config"]) != expected_config:
+        raise H1ProtocolError("artifact resolved_config 与冻结 primary config 不一致")
+    expected_config_sha256 = compute_config_hash(expected_config)
+    if manifest["config_sha256"] != expected_config_sha256:
+        raise H1ProtocolError("artifact config SHA 与冻结 primary config 不一致")
+    if manifest["seed"] != plan.seed:
+        raise H1ProtocolError("artifact manifest seed 与冻结 plan 不一致")
+    if manifest["process_type"] != "drifting_hotspot":
+        raise H1ProtocolError("artifact process_type 必须是 drifting_hotspot")
+    if manifest["git_commit"] != formal_provenance.actual_head:
+        raise H1ProtocolError("artifact manifest git_commit 与 formal execution HEAD 不一致")
+    if manifest["git_dirty"] is not False:
+        raise H1ProtocolError("artifact manifest 必须记录 clean Git 状态")
+    if artifact.trace.start_step != 0 or manifest["start_step"] != 0:
+        raise H1ProtocolError("primary artifact start_step 必须精确为零")
+    if artifact.trace.counts.shape[0] != spec.num_steps or manifest["num_steps"] != spec.num_steps:
+        raise H1ProtocolError("primary artifact num_steps 与冻结 spec 不一致")
+    if manifest["num_events"] != len(artifact.trace.events):
+        raise H1ProtocolError("artifact num_events 与 trace 不一致")
+
+    entry = ArtifactInventoryEntry(
+        seed=plan.seed,
+        relative_path=plan.relative_path,
+        process_type=cast(str, manifest["process_type"]),
+        config_sha256=cast(str, manifest["config_sha256"]),
+        content_sha256=cast(str, manifest["content_sha256"]),
+        start_step=cast(int, manifest["start_step"]),
+        num_steps=cast(int, manifest["num_steps"]),
+        num_events=cast(int, manifest["num_events"]),
+    )
+    _validate_primary_inventory_entry_identity(spec, entry)
+    _load_validated_artifact_entry(target, entry, spec.num_steps)
+    return entry
 
 
 def inventory_to_dict(inventory: ArtifactInventory) -> dict[str, object]:
@@ -1508,12 +1574,12 @@ def _protocol_fail_summary(spec: H1GateSpec, errors: Sequence[str]) -> H1GateSum
     )
 
 
-def evaluate_primary_gate(
+def _primary_protocol_errors(
     results: Sequence[PairedTraceResult],
     spec: H1GateSpec,
     inventory: ArtifactInventory,
-) -> H1GateSummary:
-    """绑定 spec、validated inventory 和 256 条 results 后执行唯一 gate rule。"""
+) -> tuple[str, ...]:
+    """返回 primary records 相对 spec/inventory 的唯一协议校验错误集合。"""
 
     if not isinstance(spec, H1GateSpec):
         raise TypeError("spec 必须是 H1GateSpec")
@@ -1591,12 +1657,36 @@ def evaluate_primary_gate(
                 )
                 if item.primary_difference != expected_difference:
                     errors.append(f"seed {item.seed} primary difference 与 metrics 不一致")
+    return tuple(errors)
+
+
+def validate_primary_paired_results(
+    results: Sequence[PairedTraceResult],
+    spec: H1GateSpec,
+    inventory: ArtifactInventory,
+) -> None:
+    """严格验证完整 formal paired results，不执行 bootstrap。"""
+
+    errors = _primary_protocol_errors(results, spec, inventory)
+    if errors:
+        raise H1ProtocolError("primary paired results 协议校验失败：" + "; ".join(errors))
+
+
+def evaluate_primary_gate(
+    results: Sequence[PairedTraceResult],
+    spec: H1GateSpec,
+    inventory: ArtifactInventory,
+) -> H1GateSummary:
+    """绑定 spec、validated inventory 和 256 条 results 后执行唯一 gate rule。"""
+
+    result_tuple = tuple(results)
+    errors = _primary_protocol_errors(result_tuple, spec, inventory)
     if errors:
         return _protocol_fail_summary(spec, errors)
     bootstrap = cast(Mapping[str, object], spec.config["bootstrap"])
     gate = cast(Mapping[str, object], spec.config["gate"])
     return _scientific_summary(
-        cast(tuple[PairedTraceResult, ...], result_tuple),
+        result_tuple,
         delta_min=cast(float, gate["delta_min"]),
         resamples=cast(int, bootstrap["resamples"]),
         bootstrap_seed=cast(int, bootstrap["seed"]),
@@ -1669,13 +1759,28 @@ def _canonical_json_bytes(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def _read_protocol_json_object(path: Path, name: str) -> dict[str, object]:
-    """限长读取严格 JSON object，并拒绝重复键与非有限常量。"""
+def _canonical_protocol_bytes(value: object, name: str) -> bytes:
+    """在 reader 边界把任何 canonical 编码失败统一为协议错误。"""
+
+    try:
+        return _canonical_json_bytes(value)
+    except (TypeError, ValueError) as error:
+        raise H1ProtocolError(f"{name} 包含无法 canonical 编码的 JSON 值") from error
+
+
+def _read_protocol_bytes(path: Path, name: str) -> bytes:
+    """限长读取 protocol 文件。"""
 
     with path.open("rb") as stream:
         payload = stream.read(_MAX_PROTOCOL_JSON_BYTES + 1)
     if len(payload) > _MAX_PROTOCOL_JSON_BYTES:
         raise H1ProtocolError(f"{name} 超出安全大小上限")
+    return payload
+
+
+def _strict_json_object(payload: bytes, name: str) -> dict[str, object]:
+    """解析一个严格 JSON object，并拒绝重复键与非有限常量。"""
+
     try:
         text = payload.decode("utf-8")
     except UnicodeDecodeError as error:
@@ -1705,6 +1810,21 @@ def _read_protocol_json_object(path: Path, name: str) -> dict[str, object]:
     return loaded
 
 
+def _read_protocol_json_object(
+    path: Path,
+    name: str,
+    *,
+    require_canonical: bool = False,
+) -> dict[str, object]:
+    """限长读取严格 JSON object，可要求 writer 的 canonical bytes。"""
+
+    payload = _read_protocol_bytes(path, name)
+    loaded = _strict_json_object(payload, name)
+    if require_canonical and payload != _canonical_protocol_bytes(loaded, name) + b"\n":
+        raise H1ProtocolError(f"{name} 不是 canonical JSON representation")
+    return loaded
+
+
 def _require_json_integer(value: object, name: str, *, minimum: int = 0) -> int:
     """在 artifact/protocol 边界读取非 bool JSON 整数。"""
 
@@ -1724,6 +1844,207 @@ def _require_json_finite(value: object, name: str) -> float:
     if not math.isfinite(normalized):
         raise H1ProtocolError(f"{name} 必须是有限实数")
     return normalized
+
+
+_EPISODE_INTEGER_FIELDS = frozenset(
+    {
+        "arrived",
+        "completed",
+        "expired",
+        "truncated",
+        "demanded_service_work",
+        "service_slots",
+        "movement_slots",
+        "idle_slots",
+        "completed_service_work",
+        "expired_service_work",
+        "truncated_service_work",
+        "expired_remaining_work",
+        "truncated_remaining_work",
+        "service_start_wait_sum",
+        "service_start_count",
+        "completed_response_sum",
+        "completed_response_count",
+        "duplicate_assignment_conflicts",
+        "zero_distance_moves",
+    }
+)
+_EPISODE_FINITE_FIELDS = frozenset(
+    {
+        "arrived_priority_sum",
+        "completed_priority_sum",
+        "expired_priority_sum",
+        "truncated_priority_sum",
+        "movement_distance",
+    }
+)
+_EPISODE_ZONE_FIELDS = frozenset(
+    {
+        "per_zone_arrived",
+        "per_zone_completed",
+        "per_zone_expired",
+        "per_zone_truncated",
+    }
+)
+_EPISODE_OPTIONAL_FINITE_FIELDS = frozenset(
+    {
+        "completion_rate",
+        "expiration_rate",
+        "truncation_rate",
+        "mean_service_start_wait",
+        "mean_completed_response",
+    }
+)
+
+
+def _episode_metrics_from_json(value: object, name: str) -> EpisodeMetrics:
+    """从 exact JSON schema 重建并验证 EpisodeMetrics。"""
+
+    expected_fields = {item.name for item in fields(EpisodeMetrics)}
+    if not isinstance(value, dict) or set(value) != expected_fields:
+        raise H1ProtocolError(f"{name} 字段集合错误")
+    normalized: dict[str, object] = {}
+    for field_name in _EPISODE_INTEGER_FIELDS:
+        normalized[field_name] = _require_json_integer(
+            value[field_name],
+            f"{name}.{field_name}",
+        )
+    for field_name in _EPISODE_FINITE_FIELDS:
+        normalized[field_name] = _require_json_finite(
+            value[field_name],
+            f"{name}.{field_name}",
+        )
+    for field_name in _EPISODE_ZONE_FIELDS:
+        items = value[field_name]
+        if not isinstance(items, list) or not items:
+            raise H1ProtocolError(f"{name}.{field_name} 必须是非空数组")
+        normalized[field_name] = tuple(
+            _require_json_integer(item, f"{name}.{field_name}[{index}]")
+            for index, item in enumerate(items)
+        )
+    for field_name in _EPISODE_OPTIONAL_FINITE_FIELDS:
+        item = value[field_name]
+        normalized[field_name] = (
+            None if item is None else _require_json_finite(item, f"{name}.{field_name}")
+        )
+    try:
+        metrics = EpisodeMetrics(**normalized)  # type: ignore[arg-type]
+        _validate_episode_metrics(metrics, name)
+    except (TypeError, ValueError) as error:
+        raise H1ProtocolError(f"{name} 内容错误：{error}") from error
+    return metrics
+
+
+def _paired_result_from_json(value: object, index: int) -> PairedTraceResult:
+    """从 exact JSON schema 重建一条 PairedTraceResult。"""
+
+    name = f"paired results line {index + 1}"
+    expected_fields = {item.name for item in fields(PairedTraceResult)}
+    if not isinstance(value, dict) or set(value) != expected_fields:
+        raise H1ProtocolError(f"{name} 字段集合错误")
+    string_fields = (
+        "trace_id",
+        "experiment_spec_sha256",
+        "artifact_config_sha256",
+        "artifact_content_sha256",
+        "environment_config_sha256",
+        "schema",
+    )
+    for field_name in string_fields:
+        if not isinstance(value[field_name], str):
+            raise H1ProtocolError(f"{name}.{field_name} 必须是字符串")
+    integer_fields = (
+        "seed",
+        "horizon",
+        "reference_nonempty_view_steps",
+        "reference_feasible_future_pair_steps",
+        "reference_oracle_would_differ_steps",
+        "reference_oracle_would_preposition_steps",
+        "actionable_steps",
+        "realized_oracle_prearrival_move_steps",
+        "oracle_actionable_steps",
+    )
+    normalized: dict[str, object] = {
+        field_name: _require_json_integer(value[field_name], f"{name}.{field_name}")
+        for field_name in integer_fields
+    }
+    normalized["version"] = _require_json_integer(
+        value["version"],
+        f"{name}.version",
+        minimum=1,
+    )
+    for field_name in (
+        "has_reference_feasible_future_pair",
+        "has_reference_oracle_action_difference",
+    ):
+        if type(value[field_name]) is not bool:
+            raise H1ProtocolError(f"{name}.{field_name} 必须是 bool")
+        normalized[field_name] = value[field_name]
+    protocol_failure = value["protocol_failure"]
+    if protocol_failure is not None and (
+        not isinstance(protocol_failure, str) or not protocol_failure
+    ):
+        raise H1ProtocolError(f"{name}.protocol_failure 必须是非空字符串或 null")
+    normalized.update({field_name: value[field_name] for field_name in string_fields})
+    normalized["protocol_failure"] = protocol_failure
+    normalized["primary_difference"] = _require_json_finite(
+        value["primary_difference"],
+        f"{name}.primary_difference",
+    )
+    normalized["reactive_metrics"] = _episode_metrics_from_json(
+        value["reactive_metrics"],
+        f"{name}.reactive_metrics",
+    )
+    normalized["oracle_metrics"] = _episode_metrics_from_json(
+        value["oracle_metrics"],
+        f"{name}.oracle_metrics",
+    )
+    try:
+        return PairedTraceResult(**normalized)  # type: ignore[arg-type]
+    except (TypeError, ValueError) as error:
+        raise H1ProtocolError(f"{name} 内容错误：{error}") from error
+
+
+def read_paired_jsonl(
+    path: str | os.PathLike[str],
+    spec: H1GateSpec,
+    inventory: ArtifactInventory,
+) -> tuple[PairedTraceResult, ...]:
+    """严格回读 canonical formal paired JSONL 并复用 primary protocol validation。"""
+
+    if not isinstance(spec, H1GateSpec):
+        raise TypeError("spec 必须是 H1GateSpec")
+    if not isinstance(inventory, ArtifactInventory):
+        raise TypeError("inventory 必须是 ArtifactInventory")
+    target = _coerce_output_path(path)
+    if target.is_symlink():
+        raise H1ProtocolError("paired results 不能是符号链接")
+    payload = _read_protocol_bytes(target, "paired results")
+    if not payload.endswith(b"\n"):
+        raise H1ProtocolError("paired results 必须以单个 canonical newline 结束")
+    raw_lines = payload[:-1].split(b"\n")
+    if any(not line for line in raw_lines):
+        raise H1ProtocolError("paired results 不允许 blank line")
+    if len(raw_lines) != spec.planned_seed_count:
+        raise H1ProtocolError("paired results 行数必须精确等于 planned seed count")
+    results: list[PairedTraceResult] = []
+    for index, line in enumerate(raw_lines):
+        loaded = _strict_json_object(line, f"paired results line {index + 1}")
+        line_name = f"paired results line {index + 1}"
+        if line != _canonical_protocol_bytes(loaded, line_name):
+            raise H1ProtocolError(
+                f"paired results line {index + 1} 不是 canonical JSON representation"
+            )
+        result = _paired_result_from_json(loaded, index)
+        if line != _canonical_protocol_bytes(paired_result_to_dict(result), line_name):
+            raise H1ProtocolError(
+                f"paired results line {index + 1} scalar types 不是 writer canonical representation"
+            )
+        results.append(result)
+    result_tuple = tuple(results)
+    validate_primary_paired_results(result_tuple, spec, inventory)
+    compute_paired_results_hash(result_tuple)
+    return result_tuple
 
 
 def read_artifact_inventory(
@@ -1829,11 +2150,11 @@ def read_artifact_inventory(
     return inventory
 
 
-def _validate_summary_payload(value: object) -> None:
-    """严格验证能够解锁 sensitivity 的 formal primary summary v1。"""
+def _summary_from_payload(value: object, name: str) -> H1GateSummary:
+    """从 exact JSON payload 重建所有合法 verdict 的 H1GateSummary。"""
 
     if not isinstance(value, dict):
-        raise H1ProtocolError("primary verdict summary 必须是 object")
+        raise H1ProtocolError(f"{name} 必须是 object")
     expected_fields = {
         "verdict",
         "n_planned",
@@ -1852,7 +2173,7 @@ def _validate_summary_payload(value: object) -> None:
         "version",
     }
     if set(value) != expected_fields:
-        raise H1ProtocolError("primary verdict summary 字段集合错误")
+        raise H1ProtocolError(f"{name} 字段集合错误")
     if (
         value["schema"] != _SUMMARY_SCHEMA
         or _require_json_integer(
@@ -1862,17 +2183,17 @@ def _validate_summary_payload(value: object) -> None:
         )
         != _SUMMARY_VERSION
     ):
-        raise H1ProtocolError("primary verdict summary schema/version 错误")
+        raise H1ProtocolError(f"{name} schema/version 错误")
     try:
         verdict = H1Verdict(value["verdict"])
     except (TypeError, ValueError) as error:
-        raise H1ProtocolError("primary verdict summary verdict 不受支持") from error
-    if verdict is H1Verdict.PROTOCOL_FAIL:
-        raise H1ProtocolError("PROTOCOL_FAIL verdict 不能解锁 sensitivity")
-    if _require_json_integer(value["n_planned"], "summary.n_planned", minimum=1) != 256:
-        raise H1ProtocolError("primary verdict n_planned 必须精确为 256")
-    if _require_json_integer(value["n_valid"], "summary.n_valid") != 256:
-        raise H1ProtocolError("primary verdict n_valid 必须精确为 256")
+        raise H1ProtocolError(f"{name} verdict 不受支持") from error
+    n_planned = _require_json_integer(value["n_planned"], "summary.n_planned", minimum=1)
+    if n_planned != 256:
+        raise H1ProtocolError(f"{name} n_planned 必须精确为 256")
+    n_valid = _require_json_integer(value["n_valid"], "summary.n_valid")
+    if n_valid > n_planned:
+        raise H1ProtocolError(f"{name} n_valid 不能超过 n_planned")
     if (
         _require_json_integer(
             value["bootstrap_resamples"],
@@ -1881,40 +2202,75 @@ def _validate_summary_payload(value: object) -> None:
         )
         != 50_000
     ):
-        raise H1ProtocolError("primary verdict bootstrap_resamples 必须精确为 50000")
+        raise H1ProtocolError(f"{name} bootstrap_resamples 必须精确为 50000")
     if _require_json_integer(value["bootstrap_seed"], "summary.bootstrap_seed") != 90_260_819:
-        raise H1ProtocolError("primary verdict bootstrap_seed 不匹配")
+        raise H1ProtocolError(f"{name} bootstrap_seed 不匹配")
     delta_min = _require_json_finite(value["delta_min"], "summary.delta_min")
     if delta_min != 0.02:
-        raise H1ProtocolError("primary verdict delta_min 不匹配")
-    point = _require_json_finite(value["point_estimate"], "summary.point_estimate")
-    lower = _require_json_finite(value["one_sided_lcb"], "summary.one_sided_lcb")
-    upper = _require_json_finite(value["one_sided_ucb"], "summary.one_sided_ucb")
-    interval = value["two_sided_interval"]
-    if not isinstance(interval, list) or len(interval) != 2:
-        raise H1ProtocolError("summary.two_sided_interval 必须是两个端点的数组")
-    two_lower = _require_json_finite(interval[0], "summary.two_sided_interval[0]")
-    two_upper = _require_json_finite(interval[1], "summary.two_sided_interval[1]")
-    if not (-1.0 <= two_lower <= lower <= upper <= two_upper <= 1.0):
-        raise H1ProtocolError("primary verdict bootstrap quantile 顺序或范围错误")
-    if not -1.0 <= point <= 1.0:
-        raise H1ProtocolError("primary verdict point_estimate 超出合法范围")
-    expected_verdict = (
-        H1Verdict.PASS
-        if point >= delta_min and lower > 0.0
-        else H1Verdict.FAIL
-        if upper < delta_min
-        else H1Verdict.INCONCLUSIVE
-    )
-    if verdict is not expected_verdict:
-        raise H1ProtocolError("primary verdict 与冻结 gate rule 不一致")
+        raise H1ProtocolError(f"{name} delta_min 不匹配")
     protocol_errors = value["protocol_errors"]
-    if protocol_errors != []:
-        raise H1ProtocolError("scientific primary verdict 不得包含 protocol_errors")
+    if not isinstance(protocol_errors, list) or not all(
+        isinstance(item, str) and item for item in protocol_errors
+    ):
+        raise H1ProtocolError(f"{name} protocol_errors 类型错误")
 
     secondary = value["secondary"]
-    if not isinstance(secondary, dict) or set(secondary) != set(_SECONDARY_FIELDS):
-        raise H1ProtocolError("primary verdict secondary 字段集合错误")
+    diagnostics = value["diagnostics"]
+    point: float | None
+    lower: float | None
+    upper: float | None
+    normalized_interval: tuple[float, float] | None
+    normalized_secondary: dict[str, object] = {}
+    normalized_diagnostics: dict[str, object] = {}
+    if verdict is H1Verdict.PROTOCOL_FAIL:
+        if n_valid > n_planned:
+            raise H1ProtocolError(f"{name} n_valid 错误")
+        if (
+            any(
+                value[field_name] is not None
+                for field_name in ("point_estimate", "one_sided_lcb", "one_sided_ucb")
+            )
+            or value["two_sided_interval"] is not None
+        ):
+            raise H1ProtocolError(f"{name} PROTOCOL_FAIL 不得包含 scientific estimate")
+        if not protocol_errors:
+            raise H1ProtocolError(f"{name} PROTOCOL_FAIL 必须记录 protocol_errors")
+        if secondary != {} or diagnostics != {}:
+            raise H1ProtocolError(f"{name} PROTOCOL_FAIL summary components 必须为空")
+        point = lower = upper = None
+        normalized_interval = None
+    else:
+        if n_valid != 256:
+            raise H1ProtocolError(f"{name} scientific n_valid 必须精确为 256")
+        if protocol_errors:
+            raise H1ProtocolError(f"{name} scientific verdict 不得包含 protocol_errors")
+        point = _require_json_finite(value["point_estimate"], "summary.point_estimate")
+        lower = _require_json_finite(value["one_sided_lcb"], "summary.one_sided_lcb")
+        upper = _require_json_finite(value["one_sided_ucb"], "summary.one_sided_ucb")
+        interval = value["two_sided_interval"]
+        if not isinstance(interval, list) or len(interval) != 2:
+            raise H1ProtocolError("summary.two_sided_interval 必须是两个端点的数组")
+        two_lower = _require_json_finite(interval[0], "summary.two_sided_interval[0]")
+        two_upper = _require_json_finite(interval[1], "summary.two_sided_interval[1]")
+        normalized_interval = (two_lower, two_upper)
+        if not (-1.0 <= two_lower <= lower <= upper <= two_upper <= 1.0):
+            raise H1ProtocolError(f"{name} bootstrap quantile 顺序或范围错误")
+        if not -1.0 <= point <= 1.0:
+            raise H1ProtocolError(f"{name} point_estimate 超出合法范围")
+        expected_verdict = (
+            H1Verdict.PASS
+            if point >= delta_min and lower > 0.0
+            else H1Verdict.FAIL
+            if upper < delta_min
+            else H1Verdict.INCONCLUSIVE
+        )
+        if verdict is not expected_verdict:
+            raise H1ProtocolError(f"{name} 与冻结 gate rule 不一致")
+        if not isinstance(secondary, dict) or set(secondary) != set(_SECONDARY_FIELDS):
+            raise H1ProtocolError(f"{name} secondary 字段集合错误")
+        if not isinstance(diagnostics, dict) or set(diagnostics) != set(_DIAGNOSTIC_SUMMARY_FIELDS):
+            raise H1ProtocolError(f"{name} diagnostics 字段集合错误")
+
     optional_secondary = {
         "completion_rate",
         "expiration_rate",
@@ -1922,26 +2278,72 @@ def _validate_summary_payload(value: object) -> None:
         "mean_service_start_wait",
         "mean_completed_response",
     }
-    for metric, pair in secondary.items():
-        if not isinstance(pair, dict) or set(pair) != {"reactive_mean", "oracle_mean"}:
-            raise H1ProtocolError(f"secondary.{metric} 字段集合错误")
-        for controller in ("reactive_mean", "oracle_mean"):
-            item = pair[controller]
-            if item is None and metric in optional_secondary:
+    if verdict is not H1Verdict.PROTOCOL_FAIL:
+        for metric, pair in secondary.items():
+            if not isinstance(pair, dict) or set(pair) != {"reactive_mean", "oracle_mean"}:
+                raise H1ProtocolError(f"secondary.{metric} 字段集合错误")
+            normalized_pair: dict[str, float | None] = {}
+            for controller in ("reactive_mean", "oracle_mean"):
+                item = pair[controller]
+                if item is None and metric in optional_secondary:
+                    normalized_pair[controller] = None
+                    continue
+                normalized = _require_json_finite(item, f"secondary.{metric}.{controller}")
+                if normalized < 0.0:
+                    raise H1ProtocolError(f"secondary.{metric}.{controller} 必须非负")
+                normalized_pair[controller] = normalized
+            normalized_secondary[metric] = normalized_pair
+        for diagnostic_name, item in diagnostics.items():
+            if item is None:
+                normalized_diagnostics[diagnostic_name] = None
                 continue
-            normalized = _require_json_finite(item, f"secondary.{metric}.{controller}")
-            if normalized < 0.0:
-                raise H1ProtocolError(f"secondary.{metric}.{controller} 必须非负")
+            normalized = _require_json_finite(item, f"diagnostics.{diagnostic_name}")
+            if not 0.0 <= normalized <= 1.0:
+                raise H1ProtocolError(f"diagnostics.{diagnostic_name} 必须位于 [0, 1]")
+            normalized_diagnostics[diagnostic_name] = normalized
 
-    diagnostics = value["diagnostics"]
-    if not isinstance(diagnostics, dict) or set(diagnostics) != set(_DIAGNOSTIC_SUMMARY_FIELDS):
-        raise H1ProtocolError("primary verdict diagnostics 字段集合错误")
-    for name, item in diagnostics.items():
-        if item is None:
-            continue
-        normalized = _require_json_finite(item, f"diagnostics.{name}")
-        if not 0.0 <= normalized <= 1.0:
-            raise H1ProtocolError(f"diagnostics.{name} 必须位于 [0, 1]")
+    try:
+        return H1GateSummary(
+            verdict=verdict,
+            n_planned=n_planned,
+            n_valid=n_valid,
+            point_estimate=point,
+            one_sided_lcb=lower,
+            one_sided_ucb=upper,
+            two_sided_interval=normalized_interval,
+            delta_min=delta_min,
+            bootstrap_resamples=cast(int, value["bootstrap_resamples"]),
+            bootstrap_seed=cast(int, value["bootstrap_seed"]),
+            secondary=normalized_secondary,
+            diagnostics=normalized_diagnostics,
+            protocol_errors=tuple(protocol_errors),
+            schema=cast(str, value["schema"]),
+            version=cast(int, value["version"]),
+        )
+    except (TypeError, ValueError) as error:
+        raise H1ProtocolError(f"{name} 内容错误：{error}") from error
+
+
+def _validate_summary_payload(value: object) -> H1GateSummary:
+    """严格验证 formal primary verdict 内嵌 summary，不执行 sensitivity unlock。"""
+
+    return _summary_from_payload(value, "primary verdict summary")
+
+
+def read_h1_summary(path: str | os.PathLike[str]) -> H1GateSummary:
+    """严格回读 canonical aggregate，并支持所有合法 formal verdict。"""
+
+    target = _coerce_output_path(path)
+    if target.is_symlink():
+        raise H1ProtocolError("H1 aggregate 不能是符号链接")
+    loaded = _read_protocol_json_object(target, "H1 aggregate", require_canonical=True)
+    summary = _summary_from_payload(loaded, "H1 aggregate")
+    if _canonical_protocol_bytes(
+        summary_to_dict(summary),
+        "H1 aggregate normalized summary",
+    ) != _canonical_protocol_bytes(loaded, "H1 aggregate"):
+        raise H1ProtocolError("H1 aggregate canonical readback 不一致")
+    return summary
 
 
 def _coerce_output_path(path: str | os.PathLike[str]) -> Path:
@@ -1958,6 +2360,24 @@ def _coerce_output_path(path: str | os.PathLike[str]) -> Path:
     return Path(raw)
 
 
+def _fsync_protocol_parent(parent: Path) -> None:
+    """同步 protocol publication 目录项，仅忽略明确不支持目录 fsync 的平台错误。"""
+
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    descriptor = os.open(parent, flags)
+    try:
+        try:
+            os.fsync(descriptor)
+        except OSError as error:
+            unsupported = {errno.EINVAL, errno.ENOTSUP}
+            if hasattr(errno, "EOPNOTSUPP"):
+                unsupported.add(errno.EOPNOTSUPP)
+            if error.errno not in unsupported:
+                raise
+    finally:
+        os.close(descriptor)
+
+
 def _atomic_write_new(path: Path, payload: bytes) -> Path:
     """原子创建新文件，默认拒绝覆盖与符号链接。"""
 
@@ -1971,18 +2391,23 @@ def _atomic_write_new(path: Path, payload: bytes) -> Path:
         dir=path.parent,
     )
     temporary = Path(temporary_name)
+    published = False
     try:
         with os.fdopen(descriptor, "wb") as stream:
             stream.write(payload)
             stream.flush()
             os.fsync(stream.fileno())
         os.link(temporary, path)
-        return path
+        published = True
     finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        if not published:
+            try:
+                temporary.unlink()
+            except FileNotFoundError:
+                pass
+    temporary.unlink()
+    _fsync_protocol_parent(path.parent)
+    return path
 
 
 def write_canonical_json(path: str | os.PathLike[str], value: object) -> Path:
@@ -2078,7 +2503,11 @@ def read_primary_verdict(
     target = _coerce_output_path(path)
     if target.is_symlink():
         raise H1ProtocolError("primary verdict 不能是符号链接")
-    loaded = _read_protocol_json_object(target, "primary verdict")
+    loaded = _read_protocol_json_object(
+        target,
+        "primary verdict",
+        require_canonical=True,
+    )
     if set(loaded) != {
         "schema",
         "version",
@@ -2117,12 +2546,21 @@ def read_primary_verdict(
     recorded_hash = loaded.pop("payload_sha256")
     if not isinstance(recorded_hash, str) or _SHA256_PATTERN.fullmatch(recorded_hash) is None:
         raise H1ProtocolError("primary verdict payload_sha256 格式错误")
-    actual_hash = hashlib.sha256(_canonical_json_bytes(loaded)).hexdigest()
+    actual_hash = hashlib.sha256(
+        _canonical_protocol_bytes(loaded, "primary verdict payload")
+    ).hexdigest()
     if recorded_hash != actual_hash:
         raise H1ProtocolError("primary verdict payload hash 校验失败")
     loaded["payload_sha256"] = recorded_hash
     summary = loaded.get("summary")
-    _validate_summary_payload(summary)
+    normalized_summary = _validate_summary_payload(summary)
+    if _canonical_protocol_bytes(
+        summary_to_dict(normalized_summary),
+        "primary verdict normalized summary",
+    ) != _canonical_protocol_bytes(summary, "primary verdict embedded summary"):
+        raise H1ProtocolError(
+            "primary verdict embedded summary 不是 writer canonical representation"
+        )
     frozen = _freeze_tree(loaded)
     if not isinstance(frozen, Mapping):
         raise RuntimeError("冻结 verdict 必须保持 Mapping")
@@ -2139,13 +2577,16 @@ def require_locked_primary_verdict(
 ) -> None:
     """在任何 sensitivity execution 前强制验证已锁定 primary verdict。"""
 
-    read_primary_verdict(
+    loaded = read_primary_verdict(
         path,
         expected_spec_sha256=spec.sha256,
         expected_artifact_inventory_sha256=expected_artifact_inventory_sha256,
         expected_paired_results_sha256=expected_paired_results_sha256,
         expected_formal_provenance=expected_formal_provenance,
     )
+    summary = loaded["summary"]
+    if not isinstance(summary, Mapping) or summary.get("verdict") == H1Verdict.PROTOCOL_FAIL.value:
+        raise H1ProtocolError("PROTOCOL_FAIL verdict 不能解锁 sensitivity")
 
 
 @dataclass(frozen=True, slots=True)
@@ -2274,6 +2715,7 @@ __all__ = [
     "build_primary_artifact_inventory",
     "build_primary_demand_config",
     "build_primary_environment_config",
+    "build_provenance_bound_artifact_entry",
     "compute_artifact_inventory_hash",
     "compute_environment_config_hash",
     "compute_h1_spec_hash",
@@ -2285,6 +2727,8 @@ __all__ = [
     "plan_primary_artifacts",
     "primary_seeds",
     "read_artifact_inventory",
+    "read_h1_summary",
+    "read_paired_jsonl",
     "read_primary_verdict",
     "require_locked_primary_verdict",
     "run_paired_trace",
@@ -2295,6 +2739,7 @@ __all__ = [
     "validate_formal_provenance",
     "validate_h0_invariant",
     "validate_primary_artifact_inventory",
+    "validate_primary_paired_results",
     "write_canonical_json",
     "write_artifact_inventory",
     "write_h1_summary",
