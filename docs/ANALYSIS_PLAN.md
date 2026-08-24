@@ -1,9 +1,10 @@
 # 统计分析计划
 
 状态：WP-02D1 primary H1 gate、WP-02D2 bounded diagnostic verifier 与 WP-02D3 Formal H1
-execution hardening 均已完成并接受。formal data 尚未生成，formal H1 尚未运行。服务器不可用期间
-允许 WP-03A prediction interface/dataset 基础设施开发，但不启动任何 official predictor、
-forecast-control、uncertainty、ID/OOD 或 MAPPO scientific analysis。
+execution hardening 均已完成并接受。WP-03A Prediction Interface & Dataset Protocol 亦已完成并
+接受。formal data 尚未生成，formal H1 尚未运行。当前 WP-03B 只允许 read-only analysis、scientific
+protocol design、candidate metric/loss/evaluation design 与 architecture-neutral experiment planning，
+不启动任何 official predictor、forecast-control、uncertainty、ID/OOD 或 MAPPO scientific analysis。
 
 ## 第一科学门槛
 
@@ -200,8 +201,11 @@ Formal verdict: 0
 Formal sensitivity: 0
 ```
 
-WP-02D1、WP-02D2 与 WP-02D3 均已完成并接受；WP-02D overall 仍在进行中。当前允许 WP-03A
-prediction interface/dataset 基础设施 implementation/review，不运行 prediction science 或 MAPPO。
+WP-02D1、WP-02D2、WP-02D3 与 WP-03A 均已完成并接受；WP-02D overall 仍在进行中。WP-03A
+accepted implementation Commit 为 `13cb39933ac65926332ca6c528ef271e1c739aa5`，approved review
+patch SHA-256 为 `5f5be8109784a5783caefc1e129edf2f2deb53aa52379b8be0c2c4120f8384b9`；
+独立 review 为 BLOCKER 0、MAJOR 0、MINOR 0，GitHub Actions passed。该工程 acceptance 不构成
+prediction scientific evidence。当前 WP-03B 只进行 architecture-neutral scientific protocol design。
 Formal H1 只能在服务器恢复、latest accepted main 同步、execution provenance 重新冻结、readiness
 preflight 与用户明确授权全部完成后启动。
 
@@ -209,6 +213,11 @@ preflight 与用户明确授权全部完成后启动。
 formal paired JSONL、formal aggregate 或 formal primary verdict，也未运行 Primary H=2、formal
 H=0、H sensitivity 或 stress sensitivity。本 checkpoint 不启动或解锁 formal data generation；
 不得记录 formal point estimate、LCB/UCB 或正式 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
-在有效 Formal H1 scientific gate 结果产生并完成解释前，不进行 official predictor、forecast
-uncertainty/control、ID/OOD、MAPPO 或 PyTorch/GPU training；WP-03A 的 deterministic interface /
-dataset protocol 基础设施不构成科学结果。
+在有效 Formal H1 scientific gate 结果产生并完成解释前，不进行 official predictor training、
+official prediction dataset generation、official ID/OOD experiment、large multi-seed prediction runs、
+GPU predictor training、forecast-guided controller main experiment、MAPPO training 或其他 official
+forecast uncertainty/control science；WP-03A 的 deterministic interface/dataset protocol 基础设施
+不构成 predictor scientifically validated、forecasting improves control、probabilistic uncertainty
+beneficial 或 MAPPO beneficial 的科学结果。WP-03B 不决定 Transformer/LSTM/TCN、optimizer、
+learning rate、hidden size、official L/P、official split sizes、official prediction seeds 或 MAPPO
+architecture。

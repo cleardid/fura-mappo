@@ -3,8 +3,9 @@
 WP-01 外生需求生成系统、WP-02A 确定性资源服务环境、WP-02B Reactive baseline、
 WP-02C Rolling True-future Oracle、WP-02D1 H1 protocol/statistics baseline、WP-02D2 bounded
 diagnostic verifier 与 WP-02D3 Formal H1 execution hardening 已完成并接受。WP-02D overall 仍在
-进行中，formal H1 尚未运行。由于服务器暂不可用，当前阶段调整为 WP-03A prediction interface /
-dataset protocol 基础设施开发；正式 predictor science、uncertainty、MAPPO 与 Formal H1 仍锁定。
+进行中，formal H1 尚未运行。WP-03A Prediction Interface & Dataset Protocol 已完成并接受；当前
+进入 WP-03B Prediction Baseline Scientific Protocol Design，只允许 architecture-neutral 设计，正式
+predictor science、uncertainty、MAPPO 与 Formal H1 仍锁定。
 
 ## 核心假设
 
@@ -92,7 +93,8 @@ protocol/NPZ/formal directory crash durability。`PROTOCOL_FAIL` 可被严格读
 sensitivity。
 
 `1092d9c...` 是历史 WP-02D3 accepted implementation。它冻结时的 execution provenance 要求其后
-只能有 docs/changelog changes；WP-03A source changes 会有意结束这份旧 execution freeze。旧调用
+只能有 docs/changelog changes；WP-03A 已在其后合法修改 `src/**`，因此这份旧 execution freeze
+已结束且不再是未来最终 execution baseline。旧调用
 仅作为历史记录保留，不得在当前或未来 latest main 上机械执行：
 
 ```bash
@@ -102,7 +104,15 @@ python -m fura_mappo.experiments._formal_h1_runner \
 
 本阶段不执行该命令。服务器恢复后必须同步最新 accepted main，重新冻结 Formal H1 accepted
 execution baseline/provenance，重新做 readiness preflight，并取得用户明确授权。该治理调整不改变
-H1 hypothesis、environment、estimand、bootstrap、gate 或 scientific identities。
+H1 hypothesis、environment、estimand、bootstrap、gate 或 scientific identities：
+
+```text
+H1 spec SHA-256:
+fc719e4634ab13ba55d0b95e63497688b3ab07c259d1421c5ed0c468cec3fade
+
+Primary environment SHA-256:
+d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1
+```
 
 WP-02D2 的 frozen handcrafted fixture expectations 已作为 unit tests 验收；它们不是 Formal H1
 outcome 或 formal primary evidence。正式 seeds 仍为 `20260819..20261074`，formal primary traces
@@ -110,23 +120,37 @@ outcome 或 formal primary evidence。正式 seeds 仍为 `20260819..20261074`�
 Formal H1 只能在未来重新冻结 execution baseline、完成 readiness preflight 并取得用户明确授权后
 启动。
 
-H1 outcome 产生前允许实现和审查 prediction interface/dataset 基础设施；这不代表 forecasting
-具有控制价值。Official predictor dataset/training/evaluation、uncertainty science、forecast-guided
-control science 与 MAPPO 仍须等待 H1 gate 及后续治理授权。若 H1 不通过，则按预注册路径检查
-formulation、stress regime 与 Oracle heuristic adequacy。
+H1 outcome 产生前，已接受的 prediction interface/dataset 基础设施可以作为 protocol-design 边界；
+这不代表 predictor 已科学验证或 forecasting 具有控制价值。Official predictor dataset generation、
+training/evaluation、uncertainty science、forecast-guided control science 与 MAPPO 仍须等待 H1 gate
+及后续治理授权。若 H1 不通过，则按预注册路径检查 formulation、stress regime 与 Oracle heuristic
+adequacy。
 
-### 预测接口与 Dataset Protocol——实现候选
+### 预测接口与 Dataset Protocol——已完成并接受
 
-WP-03A 已冻结 future realized zone-level arrival counts target、causal count history、lead 1 为
-`t+1`、episode masks、immutable point/probabilistic forecast、trace-level split/OOD isolation、
-condition identity、controller/provenance separation 与 deterministic serialization。详细协议见
-`docs/PREDICTION_PROTOCOL.md`。Candidate v2 冻结 safe-loaded artifact → verified source →
-sample/split 的 authoritative trust boundary、source ZoneSchema identity，以及 forecast/context 的
-boundary/horizon/zone/terminal-mask hard validation；candidate v3 再加入只绑定 realized
-start/counts/events、排除 intensity 与 artifact metadata 的 intrinsic trace identity，防止同一 realized
-trajectory 重新封装后跨 split；candidate v4 将 realized float fields 的 signed zero 规范为相同逻辑
-值，同时保留非零差异。当前只实现基础设施和 tiny deterministic CPU tests，不实现 predictor
-architecture、forecast-guided controller、training 或科学实验。
+WP-03A 已冻结 future realized zone-level arrival counts target、`ZoneSchema`、
+`PredictionContext` / `PredictionTarget` / `PredictionSample`、`DemandForecast`、`DemandPredictor`
+Protocol、`ObservedDemandHistory` 与 exact online/offline context parity。它还冻结
+`VerifiedPredictionArtifact` → `PredictionSource` authoritative trust boundary、排除
+`DemandTrace.intensities` 的 predictor information boundary、`realized_trace_sha256`、trace-level split
+leakage guards、`condition_sha256` ID/OOD reservation、forecast/context hard validation，以及 canonical
+protocol/manifest serialization。Core 保持 PyTorch-neutral。详细协议见
+`docs/PREDICTION_PROTOCOL.md`。
+
+Accepted implementation Commit 为 `13cb39933ac65926332ca6c528ef271e1c739aa5`；approved review
+patch SHA-256 为 `5f5be8109784a5783caefc1e129edf2f2deb53aa52379b8be0c2c4120f8384b9`；
+独立 review 为 BLOCKER 0、MAJOR 0、MINOR 0，GitHub Actions passed。该 acceptance 只证明工程
+interface/protocol 已接受，不声称 predictor scientifically validated、forecasting improves control、
+probabilistic uncertainty beneficial 或 MAPPO beneficial。
+
+### Prediction Baseline Scientific Protocol Design——下一阶段
+
+WP-03B 当前只允许 read-only analysis、scientific protocol design、candidate metric/loss/evaluation
+design 与 architecture-neutral experiment planning。在 Formal H1 scientific outcome 产生前，禁止
+official predictor training、official prediction dataset generation、official ID/OOD experiment、large
+multi-seed prediction runs、GPU predictor training、forecast-guided controller main experiment 与
+MAPPO training。本阶段不决定 Transformer/LSTM/TCN、optimizer、learning rate、hidden size、official
+L/P、official split sizes、official prediction seeds 或 MAPPO architecture。
 
 ## 科学控制
 
@@ -148,18 +172,19 @@ architecture、forecast-guided controller、training 或科学实验。
 7. 已完成 WP-02D1 H1 protocol/statistics baseline
 8. 已完成 WP-02D2 bounded diagnostic verifier implementation / acceptance
 9. 已完成 WP-02D3 Formal H1 execution orchestration / persistence hardening
-10. 当前：WP-03A Prediction Interface & Dataset Protocol implementation/review
-11. 服务器恢复后：latest accepted main 同步与 Formal H1 execution provenance 重新冻结
-12. 用户授权后的 WP-02D Formal H1 与 primary evidence audit
-13. 仅按 H1/governance 结果解锁 official predictor、uncertainty 与 forecast-control science
-14. 不确定性感知 MAPPO（仍锁定）
-15. ID/OOD、消融和相图
-16. 最终统计分析与论文结果
+10. 已完成并接受 WP-03A Prediction Interface & Dataset Protocol
+11. 当前：WP-03B Prediction Baseline Scientific Protocol Design（只读/设计）
+12. 服务器恢复后：latest accepted main 同步与 Formal H1 execution provenance 重新冻结
+13. 用户授权后的 WP-02D Formal H1 与 primary evidence audit
+14. 仅按 H1/governance 结果解锁 official predictor、uncertainty 与 forecast-control science
+15. 不确定性感知 MAPPO（仍锁定）
+16. ID/OOD、消融和相图
+17. 最终统计分析与论文结果
 
 当前未生成 256 formal NPZ、formal artifact inventory、formal paired JSONL、formal aggregate 或
 formal primary verdict，也未运行 Primary H=2、formal H=0、H sensitivity 或 stress sensitivity；
 不得记录 formal point estimate、LCB/UCB 或正式 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
-在 Formal H1 scientific gate 产生有效结果并完成解释前，只允许 architecture-neutral prediction
-interface/dataset 基础设施、unit tests 与 tiny smoke tests；不得进行 official predictor science、
-forecast uncertainty/control science、MAPPO、PyTorch/GPU training、ID/OOD 主实验、大规模 optimizer
-或论文主结果实验。
+在 Formal H1 scientific gate 产生有效结果并完成解释前，只允许 WP-03B 的 read-only analysis、
+scientific protocol design、candidate metric/loss/evaluation design 与 architecture-neutral experiment
+planning；不得进行 official predictor science/dataset generation/training、forecast uncertainty/control
+science、MAPPO、PyTorch/GPU training、ID/OOD 主实验、大规模 optimizer 或论文主结果实验。

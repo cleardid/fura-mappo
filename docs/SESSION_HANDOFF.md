@@ -1,27 +1,30 @@
 # 会话交接
 
-更新日期：2026-08-23
+更新日期：2026-08-25
 
 ## 当前唯一任务
 
 当前唯一任务为：
 
 ```text
-WP-03A Prediction Interface & Dataset Protocol implementation review
+WP-03B — Prediction Baseline Scientific Protocol Design
+READ-ONLY ANALYSIS / PROTOCOL DESIGN ONLY
 
 DO NOT RUN FORMAL H1 YET
 Formal traces = 0 / 256
 ```
 
-WP-02D1、WP-02D2 与 WP-02D3 均已完成并接受，但 WP-02D overall 仍在进行中，因为 Formal H1
-scientific gate 尚未执行。服务器不可用期间允许 WP-03A architecture-neutral prediction interface /
-dataset infrastructure 实现与 CPU 审查，不启动或解锁 official prediction science、MAPPO 或 formal
-data generation。`1092d9c...` 保留为历史 WP-02D3 accepted implementation，不是 WP-03 source
-changes 后的未来 final execution baseline。
+WP-02D1、WP-02D2、WP-02D3 与 WP-03A 均已完成并接受，但 WP-02D overall 仍在进行中，因为
+Formal H1 scientific gate 尚未执行。当前 WP-03B 只允许 read-only analysis、scientific protocol
+design、candidate metric/loss/evaluation design 与 architecture-neutral experiment planning，不启动或
+解锁 official prediction science、MAPPO 或 formal data generation。`1092d9c...` 保留为历史 WP-02D3
+accepted implementation；WP-03A 已在其后合法修改 `src/**`，所以它不是未来 final execution
+baseline。
 
 ## 稳定基线
 
 ```text
+WP-03A accepted implementation：13cb39933ac65926332ca6c528ef271e1c739aa5
 WP-02D3 实现：1092d9c87bfff8ba6c1f2132734480112d7b5975
 WP-02D2 docs checkpoint：6c2e8c67598f0d2ceda727d3c975a18fa6037fdd
 WP-02D2 实现：cfab8c1b1981ef095d68969fff74faa2ac4f256d
@@ -333,23 +336,36 @@ F6B        1           1
 `NO_HEURISTIC_MISS_DETECTED_WITHIN_PREREGISTERED_BOUNDED_SUITE`。后者不表示 Primary optimal
 或 heuristic adequacy proven；两个标签都不是 Formal H1 scientific outcome。
 
-## WP-03A handoff 与当前禁止事项
+## WP-03A accepted handoff 与当前禁止事项
 
-WP-03A 冻结协议见 `docs/PREDICTION_PROTOCOL.md`。v3 独立 review 结论为 BLOCKER 0、MAJOR 1、
-MINOR 1，未通过 acceptance；唯一 MAJOR 是 raw float bytes 可用 `+0.0`/`-0.0` 绕过 intrinsic
-identity，MINOR 是 D-039 current candidate wording 过时。当前 candidate v4 在 canonical float64
-positions/priority 上把所有零统一为 `+0.0`，保留全部非零差异，并修正 D-039。此前 safe-loaded
-artifact trust boundary、`realized_trace_sha256` serialization/revalidation/global split guards、zone 与
-forecast binding 均保留。实现候选另含 immutable models、predictor
-Protocol、online history、offline dataset derivation、source/condition identity、trace-level split
-manifest 与 strict JSON serialization；不实现 predictor architecture、forecast-guided controller、
-normalization、training、PyTorch 或 MAPPO。候选必须完成 focused/relevant/full CPU tests、Ruff、format、
-diff-check、完整 review patch 与独立审查；Codex 不 Commit/Push/Tag。
+WP-03A 冻结协议见 `docs/PREDICTION_PROTOCOL.md`。Candidate v3 独立 review 的历史结论为
+BLOCKER 0、MAJOR 1、MINOR 1；candidate v4 定向修复 signed-zero intrinsic identity 与 D-039 stale
+wording，最终独立 review 为 BLOCKER 0、MAJOR 0、MINOR 0，`WP-03A candidate v4 APPROVED`。
 
-当前 Mac 未提交 v4 候选已完成：WP-03A focused `91 passed in 0.64s`；relevant regression
-`707 passed in 8.53s`；full CPU `812 passed in 11.95s`；Ruff、format 与 `git diff --check` 通过；
-只读重算的 H1 spec/environment identities 与冻结值一致。以上尚未经过独立 patch review，不得记为
-accepted implementation 或 scientific evidence。
+```text
+WP-03A accepted implementation Commit:
+13cb39933ac65926332ca6c528ef271e1c739aa5
+
+Commit message:
+feat: add WP-03A prediction protocol infrastructure
+
+Approved review patch SHA-256:
+5f5be8109784a5783caefc1e129edf2f2deb53aa52379b8be0c2c4120f8384b9
+
+GitHub Actions:
+passed
+```
+
+未记录未经确认的 workflow run number、job ID 或 duration。Accepted WP-03A 冻结 future realized
+zone-level count target、`ZoneSchema`、`PredictionContext` / `PredictionTarget` /
+`PredictionSample`、`DemandForecast`、`DemandPredictor` Protocol、`ObservedDemandHistory` 与 exact
+online/offline context parity；冻结 `VerifiedPredictionArtifact` → `PredictionSource` authoritative trust
+boundary、`realized_trace_sha256`、trace-level leakage guards、`condition_sha256` ID/OOD reservation、
+forecast/context hard validation 与 canonical protocol/manifest serialization。Core 保持 PyTorch-neutral，
+`DemandTrace.intensities` 明确排除在 predictor information boundary 之外。
+
+该 acceptance 不表示 predictor scientifically validated、forecasting improves control、probabilistic
+uncertainty beneficial 或 MAPPO beneficial；这些科学实验尚未执行。
 
 当前 Formal H1 未运行，formal primary traces 为 `0 / 256`，正式 seeds 仍为
 `20260819..20261074`。尚未生成或运行：
@@ -361,6 +377,19 @@ accepted implementation 或 scientific evidence。
 
 WP-03A 不启动或解锁上述 formal 工作。WP-02D overall 仍未完成。服务器恢复后，必须同步 latest
 accepted main、重新冻结 Formal H1 execution provenance/accepted execution baseline、重新 preflight
-并取得用户明确授权。Formal H1 scientific gate 产生有效结果并完成解释前，不得进行 official
-predictor、forecast uncertainty/control、MAPPO、PyTorch/GPU training 或 ID/OOD main experiment；
-基础设施实现不构成 forecasting control-value claim。
+并取得用户明确授权。冻结 scientific identities 继续为：
+
+```text
+H1 spec SHA-256:
+fc719e4634ab13ba55d0b95e63497688b3ab07c259d1421c5ed0c468cec3fade
+
+Primary environment SHA-256:
+d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1
+```
+
+Formal H1 scientific outcome 产生前，WP-03B 只允许 read-only analysis、scientific protocol design、
+candidate metric/loss/evaluation design 与 architecture-neutral experiment planning。不得进行 official
+predictor training、official prediction dataset generation、official ID/OOD experiment、large multi-seed
+prediction runs、GPU predictor training、forecast-guided controller main experiment 或 MAPPO training；
+不得决定 Transformer/LSTM/TCN、optimizer、learning rate、hidden size、official L/P、official split
+sizes、official prediction seeds 或 MAPPO architecture。

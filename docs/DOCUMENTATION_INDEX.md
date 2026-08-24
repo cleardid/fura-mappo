@@ -16,15 +16,16 @@
 
 WP-02D overall 进行中且 Formal H1 尚未运行。WP-02D1 protocol/statistics baseline、WP-02D2
 `bounded task-target root-information exhaustive diagnostic verifier` 与 WP-02D3
-`Formal H1 execution orchestration / persistence hardening` 均已完成并接受。服务器不可用期间当前
-工作包为 WP-03A Prediction Interface & Dataset Protocol implementation/review；只允许基础设施、
-CPU tests 与 tiny smoke，不解锁 official prediction science 或 MAPPO。Formal primary traces 为
-`0 / 256`。服务器恢复后必须同步 latest accepted main、重新冻结 Formal H1 execution provenance、
-完成 readiness preflight 并取得用户明确授权。
+`Formal H1 execution orchestration / persistence hardening` 与 WP-03A Prediction Interface & Dataset
+Protocol 均已完成并接受。当前工作包为 `WP-03B — Prediction Baseline Scientific Protocol Design`，
+只允许 read-only analysis、scientific protocol design、candidate metric/loss/evaluation design 与
+architecture-neutral experiment planning，不解锁 official prediction science 或 MAPPO。Formal primary
+traces 为 `0 / 256`。服务器恢复后必须同步 latest accepted main、重新冻结 Formal H1 execution
+provenance、完成 readiness preflight 并取得用户明确授权。
 
-当前是 candidate v4：v3 独立复审的 signed-zero intrinsic-hash MAJOR 与 D-039 stale wording MINOR
-已定向修复；realized positions/priority 的 `+0.0`/`-0.0` 现在具有相同 hash，真实非零差异保持可辨，
-仍待新的完整 patch 独立复审。
+WP-03A accepted implementation Commit 为 `13cb39933ac65926332ca6c528ef271e1c739aa5`，approved
+review patch SHA-256 为 `5f5be8109784a5783caefc1e129edf2f2deb53aa52379b8be0c2c4120f8384b9`；
+独立 review 为 BLOCKER 0、MAJOR 0、MINOR 0，GitHub Actions passed。
 
 优先读取：
 
@@ -46,7 +47,7 @@ CPU tests 与 tiny smoke，不解锁 official prediction science 或 MAPPO。For
 - `src/fura_mappo/envs/`
 - `src/fura_mappo/baselines/`
 
-## WP-03A 当前文档
+## WP-03A 已接受文档与实现
 
 - `docs/PREDICTION_PROTOCOL.md`
 - `src/fura_mappo/prediction/`

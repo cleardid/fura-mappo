@@ -375,26 +375,40 @@
 ## D-039：冻结 WP-03A Prediction Interface & Dataset Protocol
 
 - 状态：已接受
-- 实现状态：设计决策已接受；candidate v3 独立 review 为 BLOCKER 0、MAJOR 1、MINOR 1，当前
-  candidate v4 只修复 signed-zero intrinsic-hash canonicalization 与本条 stale wording，仍须独立
-  review/acceptance，不能据此记录 accepted implementation。
+- 实现状态：设计与实现均已接受。Candidate v3 独立 review 的历史结论为 BLOCKER 0、MAJOR 1、
+  MINOR 1；candidate v4 定向修复 signed-zero intrinsic-hash canonicalization 与本条 stale wording，
+  最终独立 review 为 BLOCKER 0、MAJOR 0、MINOR 0，`WP-03A candidate v4 APPROVED`。
+- 接受证据：accepted implementation Commit 为
+  `13cb39933ac65926332ca6c528ef271e1c739aa5`（`feat: add WP-03A prediction protocol
+  infrastructure`）；approved review patch SHA-256 为
+  `5f5be8109784a5783caefc1e129edf2f2deb53aa52379b8be0c2c4120f8384b9`；用户已确认
+  GitHub Actions passed。未记录未经确认的 workflow run number、job ID 或 duration。
 - Target：lead `1..P` 的 future realized zone-level arrival counts，shape `[P,Z]`、`int64`；不使用
   intensity、future event list 或 controller-dependent state。
 - Information boundary：context 只含 boundary `t` 及以前的 realized zone counts、absolute step、
   steps remaining 和静态 zone identity；训练 input 与 inference input 完全一致。
 - 时间语义：history 为 `t-L+1..t`，左 zero padding + mask；forecast row 0 为 `t+1`；target 在 episode
   end 右 zero padding + mask；supervised anchor 为 `start <= t < stop-1`。
-- Interface：immutable natural-scale `PredictionContext`、`PredictionTarget`、`PredictionSample` 与
-  mandatory-mean/optional-variance-quantiles-scenarios `DemandForecast`；PyTorch-neutral，不选择模型
-  architecture。
+- Interface：immutable natural-scale `ZoneSchema`、`PredictionContext`、`PredictionTarget`、
+  `PredictionSample`、mandatory-mean/optional-variance-quantiles-scenarios `DemandForecast` 与
+  `DemandPredictor` Protocol；`ObservedDemandHistory` 保证 online/offline context parity；core
+  PyTorch-neutral，不选择模型 architecture。
 - Leakage guards：online history 不接收 `DemandTrace`；offline context 只复制 realized count prefix；
   source/provenance 与 controller-visible payload 分离；ZoneSchema 与 safe-loaded artifact source
   hard binding；authoritative source 内部计算不含 intensity/metadata 的 intrinsic realized-trace
-  identity，并把 realized float fields 的 `+0.0`/`-0.0` canonicalize 为相同逻辑值；authoritative
-  split 只能从 verified artifacts 构造/复核；全 trace split、global
+  identity，并把 realized float fields 的 `+0.0`/`-0.0` canonicalize 为相同逻辑值；
+  `DemandTrace.intensities` 明确排除在 predictor information boundary 之外；authoritative split 只能
+  从 `VerifiedPredictionArtifact` 派生的 `PredictionSource` 构造/复核；全 trace split、global
   seed/content/realized-trace/trace ID disjointness 与 OOD condition holdout；forecast 必须与其 context
   的 boundary、horizon、zone schema、zone count 和 terminal mask 完全一致。
 - Reproducibility：ZoneSchema/protocol/condition/sample/split 使用既有 stable config hash；protocol /
   manifest strict canonical JSON、exact schema、no-overwrite 与 strict readback；dataset derivation RNG-free。
 - 非目标：不冻结正式 L/P、normalization、split seeds、OOD conditions、predictor、controller、training、
   reward 或 MAPPO。没有 forecasting 改善 control 的科学结论。
+- 下一阶段：`WP-03B — Prediction Baseline Scientific Protocol Design` 只允许 read-only analysis、
+  scientific protocol design、candidate metric/loss/evaluation design 与 architecture-neutral experiment
+  planning。在 Formal H1 scientific outcome 产生前，禁止 official predictor training、official
+  prediction dataset generation、official ID/OOD experiment、large multi-seed prediction runs、GPU
+  predictor training、forecast-guided controller main experiment 与 MAPPO training；不决定
+  Transformer/LSTM/TCN、optimizer、learning rate、hidden size、official L/P、official split sizes、
+  official prediction seeds 或 MAPPO architecture。

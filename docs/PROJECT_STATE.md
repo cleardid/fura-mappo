@@ -1,10 +1,11 @@
 # 项目状态
 
-更新日期：2026-08-23
+更新日期：2026-08-25
 
 ## 已验证稳定基线
 
 ```text
+WP-03A accepted implementation Commit：13cb39933ac65926332ca6c528ef271e1c739aa5
 WP-02D3 实现 Commit：1092d9c87bfff8ba6c1f2132734480112d7b5975
 WP-02D2 docs checkpoint：6c2e8c67598f0d2ceda727d3c975a18fa6037fdd
 WP-02D2 实现 Commit：cfab8c1b1981ef095d68969fff74faa2ac4f256d
@@ -38,7 +39,7 @@ docs-only 收尾 Commit 不自引用自身 SHA；当前 HEAD 以 `git rev-parse 
 | WP-02D1 | 已完成 | strict H1 preregistration、artifact/results/verdict audit chain、paired runner 与统计基线 |
 | WP-02D2 | 已完成 | bounded task-target root-information exhaustive diagnostic verifier 已接受 |
 | WP-02D3 | 已完成 | Formal H1 execution orchestration / persistence hardening 已接受 |
-| WP-03A | candidate v4 | v3 review 剩余 signed-zero MAJOR / stale wording MINOR；已定向修复，待复审 |
+| WP-03A | 已完成 | Prediction Interface & Dataset Protocol 已独立审查、Commit/Push，GitHub Actions 通过 |
 
 ## WP-01 冻结接口与协议
 
@@ -592,36 +593,62 @@ Primary environment config SHA-256:
 d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1
 ```
 
-## WP-03A 冻结能力与当前候选
+## WP-03A 冻结能力与验收
 
-WP-03A 只建立 architecture-neutral、PyTorch-neutral prediction 基础设施：
+WP-03A accepted implementation 只建立 architecture-neutral、PyTorch-neutral prediction
+基础设施：
 
 - `ZoneSchema` 与稳定 zone geometry hash；
-- causal `PredictionContext`、realized-count `PredictionTarget` 与 deterministic sample identity；
+- causal `PredictionContext`、future realized zone-level count `PredictionTarget`、
+  `PredictionSample` 与 deterministic sample identity；
 - controller-visible `DemandForecast`，支持 mandatory mean 与 optional variance/quantiles/scenarios；
+- architecture-neutral `DemandPredictor` Protocol；
 - `ForecastRecord` provenance isolation；
 - 不接收 `DemandTrace` 的 `ObservedDemandHistory` 与 exact online/offline context parity；
 - 从完整 trace 派生 supervised sample，但 context 只读取 realized count prefix；
-- seed-removed `condition_sha256`、完整-trace split unit、ID/OOD condition isolation；
-- safe-loaded artifact → verified source trust boundary，source 显式绑定 ZoneSchema SHA；
+- seed-removed `condition_sha256` ID/OOD reservation、完整-trace split unit 与 condition isolation；
+- `VerifiedPredictionArtifact` → `PredictionSource` authoritative trust boundary，source 显式绑定
+  ZoneSchema SHA；
 - manifest/intensity-independent `realized_trace_sha256` 与跨重新封装 artifact 的 split guard；
+- trace-level seed/content/realized-trace/trace-ID leakage guards；
 - realized positions/priority 的 `+0.0`/`-0.0` canonicalization；
 - forecast/context 的 boundary、horizon、zone schema/count 与 terminal mask hard validation；
 - strict canonical JSON protocol/manifest persistence 与 no-overwrite readback。
 
 Canonical target 是 `t+1..t+P` 的 future realized zone arrival counts，不是 intensity 或 future event
-list。`DemandTrace.intensities`、process/seed/config/artifact provenance 与 future information 均不得进入
+list。`DemandTrace.intensities` 明确排除在 predictor information boundary 之外；
+process/seed/config/artifact provenance 与 future information 均不得进入
 predictor context 或 controller-visible forecast。Core objects 使用 natural count units；WP-03A 不冻结
 正式 L/P、normalization、model architecture、official splits 或 OOD conditions。
 
-详细冻结协议见 `docs/PREDICTION_PROTOCOL.md`。v3 独立 review 结论为 BLOCKER 0、MAJOR 1、
-MINOR 1：raw float bytes 区分逻辑相等的 signed zero，且 D-039 当前 candidate wording 过时。
-当前 v4 已把 realized positions/priority 中的全部零 canonicalize 为 `+0.0`，补真实 artifact
-cross-split 对抗测试，并修正 D-039。实现仍是未 Commit 的 review candidate；accepted
-状态、稳定 Commit 与验收证据只能在独立 patch review、用户手动 Commit/Push 和 GitHub Actions 后
-记录。
+详细冻结协议见 `docs/PREDICTION_PROTOCOL.md`。v3 独立 review 的历史结论为 BLOCKER 0、MAJOR 1、
+MINOR 1；candidate v4 定向修复 signed-zero intrinsic-hash canonicalization 与 D-039 stale wording，
+随后独立 review 结论为 BLOCKER 0、MAJOR 0、MINOR 0，`WP-03A candidate v4 APPROVED`。
 
-### 当前 Mac 候选验证
+### 验收证据
+
+```text
+WP-03A accepted implementation Commit:
+13cb39933ac65926332ca6c528ef271e1c739aa5
+
+Commit message:
+feat: add WP-03A prediction protocol infrastructure
+
+Approved review patch SHA-256:
+5f5be8109784a5783caefc1e129edf2f2deb53aa52379b8be0c2c4120f8384b9
+
+Independent review:
+BLOCKER 0
+MAJOR 0
+MINOR 0
+
+GitHub Actions:
+passed
+```
+
+未记录未经确认的 workflow run number、job ID 或 duration。
+
+### Accepted candidate v4 Mac validation
 
 - WP-03A focused tests：`91 passed in 0.64s`
 - demand/environment/Reactive/Oracle/H1 protocol relevant regression：`707 passed in 8.53s`
@@ -631,15 +658,16 @@ cross-split 对抗测试，并修正 D-039。实现仍是未 Commit 的 review c
 - `git diff --check`：通过
 - 只读重算 H1 spec 与 Primary environment SHA-256，均与冻结 identity 完全一致
 
-这些结果只证明当前未提交候选的 deterministic interface/protocol regression 通过，不是独立审查、
-accepted implementation、Formal H1 evidence 或 forecasting performance evidence。
+这些 deterministic interface/protocol regression 与独立审查、Commit/Push、GitHub Actions 共同构成
+WP-03A engineering acceptance 证据；它们不是 Formal H1 evidence、predictor scientific validation、
+forecasting improves control、probabilistic uncertainty beneficial 或 MAPPO beneficial 的证据。
 
 ## 当前执行策略与 server queue
 
-WP-02D1、WP-02D2 与 WP-02D3 均已完成并接受，但 WP-02D overall 仍在进行中，因为 Formal H1
-scientific gate 尚未执行。服务器不可用期间允许 Mac 正常完成 WP-03A infrastructure
-implementation、CPU tests、patch review 与用户手动发布。旧 `1092d9c...` execution provenance 是
-历史 checkpoint；WP-03 source changes 后不再满足其 docs-only descendant gate。
+WP-02D1、WP-02D2、WP-02D3 与 WP-03A 均已完成并接受，但 WP-02D overall 仍在进行中，因为
+Formal H1 scientific gate 尚未执行。`1092d9c...` 仍是历史 WP-02D3 accepted implementation
+checkpoint；WP-03A 已在其后合法修改 `src/**`，因此旧的“`1092d9c...` 后只允许 docs/changelog
+descendant” execution freeze 已不再是未来最终 execution baseline。
 
 服务器恢复后必须先同步 latest accepted main、重新冻结 Formal H1 accepted execution baseline /
 provenance、重新做 readiness preflight 并取得用户明确授权。此前不得启动 formal data generation。
@@ -649,7 +677,10 @@ artifact inventory、formal paired JSONL、formal aggregate 或 formal primary v
 formal H=0 set、formal H=2 primary rollout、H sensitivity 或 stress sensitivity。不得记录任何
 formal point estimate、LCB/UCB 或 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
 
-在 Formal H1 scientific gate 产生有效结果并完成解释前，只允许 prediction interface/dataset
-基础设施和 tiny deterministic CPU validation；official predictor、forecast uncertainty/control、
-MAPPO、PyTorch/GPU training 与 ID/OOD main experiment 继续锁定，且没有 forecasting control-value
-claim。
+下一工作包为 `WP-03B — Prediction Baseline Scientific Protocol Design`。在 Formal H1 scientific
+outcome 产生前，WP-03B 只允许 read-only analysis、scientific protocol design、candidate
+metric/loss/evaluation design 与 architecture-neutral experiment planning。不得进行 official predictor
+training、official prediction dataset generation、official ID/OOD experiment、large multi-seed
+prediction runs、GPU predictor training、forecast-guided controller main experiment 或 MAPPO training；
+本 checkpoint 也不决定 Transformer/LSTM/TCN、optimizer、learning rate、hidden size、official L/P、
+official split sizes、official prediction seeds 或 MAPPO architecture。
