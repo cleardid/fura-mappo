@@ -1,7 +1,9 @@
 # 统计分析计划
 
 状态：WP-02D1 primary H1 gate、WP-02D2 bounded diagnostic verifier 与 WP-02D3 Formal H1
-execution hardening 均已完成并接受。formal data 尚未生成，formal H1 尚未运行。
+execution hardening 均已完成并接受。formal data 尚未生成，formal H1 尚未运行。服务器不可用期间
+允许 WP-03A prediction interface/dataset 基础设施开发，但不启动任何 official predictor、
+forecast-control、uncertainty、ID/OOD 或 MAPPO scientific analysis。
 
 ## 第一科学门槛
 
@@ -121,22 +123,23 @@ fail，不得删除 seed、替换 seed 或静默排除。
 
 ## Formal execution governance
 
-WP-02D3 accepted implementation SHA 冻结为
-`1092d9c87bfff8ba6c1f2132734480112d7b5975`。未来 docs-only checkpoint Commit 只是它的合法
-docs descendant，不替代 accepted implementation SHA。private runner 的未来固定调用是：
+WP-02D3 历史 accepted implementation SHA 为
+`1092d9c87bfff8ba6c1f2132734480112d7b5975`。其 private runner 调用作为历史 execution checkpoint
+记录如下，但 WP-03A source changes 后不得在 latest main 上直接执行：
 
 ```bash
 python -m fura_mappo.experiments._formal_h1_runner \
   --accepted-implementation-sha 1092d9c87bfff8ba6c1f2132734480112d7b5975
 ```
 
-本 checkpoint 不执行。runner 固定使用 `configs/experiments/wp02d_h1.yaml` 与唯一 formal root
+本阶段不执行。runner 固定使用 `configs/experiments/wp02d_h1.yaml` 与唯一 formal root
 `artifacts/wp02d_h1_formal_v1/`，并固定 `traces/`、artifact inventory、primary paired JSONL、
 aggregate 与 verdict 路径。不存在第二套 formal evidence path。
 
-执行前及关键 publication 边界必须验证真实 repo root、`main`、clean working tree、
-`actual HEAD == origin/main`、accepted implementation/WP-02C stable ancestry、accepted SHA 后仅
-docs/changelog changes，以及实际 loaded Python code 来自当前 repo 的 `src/fura_mappo`。
+服务器恢复后，必须以最新 accepted main 重新冻结 Formal H1 accepted execution baseline，随后在
+执行前及关键 publication 边界验证真实 repo root、`main`、clean working tree、HEAD/origin、
+accepted implementation/WP-02C ancestry 与实际 loaded code path。重新冻结 execution provenance
+不得改变 H1 science 或下列科学 identities。
 
 Restart/resume 必须是 provenance-bound、strict、no-overwrite：inventory 已存在时不生成 trace；
 inventory 不存在时只复用严格有效的既有 trace，缺失 trace 才可在重新验证 provenance 后生成
@@ -197,13 +200,15 @@ Formal verdict: 0
 Formal sensitivity: 0
 ```
 
-WP-02D1、WP-02D2 与 WP-02D3 均已完成并接受；WP-02D overall 仍在进行中。下一阶段是
-`Final Formal H1 execution-readiness freeze / runbook freeze`，不是 prediction 或 MAPPO。Formal
-H1 只能在本 docs-only checkpoint Commit/Push、最终只读 freeze 与用户明确授权全部完成后启动。
+WP-02D1、WP-02D2 与 WP-02D3 均已完成并接受；WP-02D overall 仍在进行中。当前允许 WP-03A
+prediction interface/dataset 基础设施 implementation/review，不运行 prediction science 或 MAPPO。
+Formal H1 只能在服务器恢复、latest accepted main 同步、execution provenance 重新冻结、readiness
+preflight 与用户明确授权全部完成后启动。
 
 正式 seeds 仍为 `20260819..20261074`，当前未生成 256 formal NPZ、formal artifact inventory、
 formal paired JSONL、formal aggregate 或 formal primary verdict，也未运行 Primary H=2、formal
 H=0、H sensitivity 或 stress sensitivity。本 checkpoint 不启动或解锁 formal data generation；
 不得记录 formal point estimate、LCB/UCB 或正式 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
-在有效 Formal H1 scientific gate 结果产生并完成解释前，不进入 prediction、forecast uncertainty、
-MAPPO 或 PyTorch/GPU training。
+在有效 Formal H1 scientific gate 结果产生并完成解释前，不进行 official predictor、forecast
+uncertainty/control、ID/OOD、MAPPO 或 PyTorch/GPU training；WP-03A 的 deterministic interface /
+dataset protocol 基础设施不构成科学结果。

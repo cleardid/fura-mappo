@@ -1,6 +1,6 @@
 # 项目状态
 
-更新日期：2026-08-21
+更新日期：2026-08-23
 
 ## 已验证稳定基线
 
@@ -38,6 +38,7 @@ docs-only 收尾 Commit 不自引用自身 SHA；当前 HEAD 以 `git rev-parse 
 | WP-02D1 | 已完成 | strict H1 preregistration、artifact/results/verdict audit chain、paired runner 与统计基线 |
 | WP-02D2 | 已完成 | bounded task-target root-information exhaustive diagnostic verifier 已接受 |
 | WP-02D3 | 已完成 | Formal H1 execution orchestration / persistence hardening 已接受 |
+| WP-03A | candidate v4 | v3 review 剩余 signed-zero MAJOR / stale wording MINOR；已定向修复，待复审 |
 
 ## WP-01 冻结接口与协议
 
@@ -591,21 +592,64 @@ Primary environment config SHA-256:
 d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1
 ```
 
-## 下一步：Final Formal H1 execution-readiness freeze / runbook freeze
+## WP-03A 冻结能力与当前候选
+
+WP-03A 只建立 architecture-neutral、PyTorch-neutral prediction 基础设施：
+
+- `ZoneSchema` 与稳定 zone geometry hash；
+- causal `PredictionContext`、realized-count `PredictionTarget` 与 deterministic sample identity；
+- controller-visible `DemandForecast`，支持 mandatory mean 与 optional variance/quantiles/scenarios；
+- `ForecastRecord` provenance isolation；
+- 不接收 `DemandTrace` 的 `ObservedDemandHistory` 与 exact online/offline context parity；
+- 从完整 trace 派生 supervised sample，但 context 只读取 realized count prefix；
+- seed-removed `condition_sha256`、完整-trace split unit、ID/OOD condition isolation；
+- safe-loaded artifact → verified source trust boundary，source 显式绑定 ZoneSchema SHA；
+- manifest/intensity-independent `realized_trace_sha256` 与跨重新封装 artifact 的 split guard；
+- realized positions/priority 的 `+0.0`/`-0.0` canonicalization；
+- forecast/context 的 boundary、horizon、zone schema/count 与 terminal mask hard validation；
+- strict canonical JSON protocol/manifest persistence 与 no-overwrite readback。
+
+Canonical target 是 `t+1..t+P` 的 future realized zone arrival counts，不是 intensity 或 future event
+list。`DemandTrace.intensities`、process/seed/config/artifact provenance 与 future information 均不得进入
+predictor context 或 controller-visible forecast。Core objects 使用 natural count units；WP-03A 不冻结
+正式 L/P、normalization、model architecture、official splits 或 OOD conditions。
+
+详细冻结协议见 `docs/PREDICTION_PROTOCOL.md`。v3 独立 review 结论为 BLOCKER 0、MAJOR 1、
+MINOR 1：raw float bytes 区分逻辑相等的 signed zero，且 D-039 当前 candidate wording 过时。
+当前 v4 已把 realized positions/priority 中的全部零 canonicalize 为 `+0.0`，补真实 artifact
+cross-split 对抗测试，并修正 D-039。实现仍是未 Commit 的 review candidate；accepted
+状态、稳定 Commit 与验收证据只能在独立 patch review、用户手动 Commit/Push 和 GitHub Actions 后
+记录。
+
+### 当前 Mac 候选验证
+
+- WP-03A focused tests：`91 passed in 0.64s`
+- demand/environment/Reactive/Oracle/H1 protocol relevant regression：`707 passed in 8.53s`
+- full CPU suite：`812 passed in 11.95s`
+- Ruff：`All checks passed!`
+- format：`97 files already formatted`
+- `git diff --check`：通过
+- 只读重算 H1 spec 与 Primary environment SHA-256，均与冻结 identity 完全一致
+
+这些结果只证明当前未提交候选的 deterministic interface/protocol regression 通过，不是独立审查、
+accepted implementation、Formal H1 evidence 或 forecasting performance evidence。
+
+## 当前执行策略与 server queue
 
 WP-02D1、WP-02D2 与 WP-02D3 均已完成并接受，但 WP-02D overall 仍在进行中，因为 Formal H1
-scientific gate 尚未执行。下一阶段是在生成任何正式 primary trace 前进行最终只读
-execution-readiness/runbook freeze，验证本 docs checkpoint 已 Push、current `main` clean、
-HEAD 等于 `origin/main`、`1092d9c...` ancestry、accepted SHA 后仅 docs/changelog changes、actual
-loaded code path、exact spec/environment identities、formal-data-zero、exact frozen invocation 与
-用户明确授权。
+scientific gate 尚未执行。服务器不可用期间允许 Mac 正常完成 WP-03A infrastructure
+implementation、CPU tests、patch review 与用户手动发布。旧 `1092d9c...` execution provenance 是
+历史 checkpoint；WP-03 source changes 后不再满足其 docs-only descendant gate。
 
-Formal H1 只能在本 docs-only checkpoint Commit/Push、最终 freeze 与用户明确授权全部完成后启动。
-本 checkpoint 不启动或解锁 formal data generation。当前 Formal H1 仍未运行，formal primary
+服务器恢复后必须先同步 latest accepted main、重新冻结 Formal H1 accepted execution baseline /
+provenance、重新做 readiness preflight 并取得用户明确授权。此前不得启动 formal data generation。
+当前 Formal H1 仍未运行，formal primary
 traces 仍为 `0 / 256`，正式 seeds 仍为 `20260819..20261074`；未生成 256 formal NPZ、formal
 artifact inventory、formal paired JSONL、formal aggregate 或 formal primary verdict，也未运行
 formal H=0 set、formal H=2 primary rollout、H sensitivity 或 stress sensitivity。不得记录任何
 formal point estimate、LCB/UCB 或 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
 
-在 Formal H1 scientific gate 产生有效结果并完成解释前，继续禁止进入 prediction、forecast
-uncertainty、MAPPO、PyTorch/GPU training 或 ID/OOD main experiment。
+在 Formal H1 scientific gate 产生有效结果并完成解释前，只允许 prediction interface/dataset
+基础设施和 tiny deterministic CPU validation；official predictor、forecast uncertainty/control、
+MAPPO、PyTorch/GPU training 与 ID/OOD main experiment 继续锁定，且没有 forecasting control-value
+claim。

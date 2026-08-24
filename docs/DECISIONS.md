@@ -311,7 +311,11 @@
 
 ## D-037：接受 WP-02D3 Formal H1 execution hardening baseline
 
-- 状态：已接受
+- 状态：已修订
+- 修订范围：WP-02D3 implementation acceptance、H1 science 与当时的 execution-hardening 事实继续
+  有效；“未来永远以 `1092d9c...` 且其后只能 docs/changelog 作为 execution baseline”的前瞻性
+  条款由 D-038 修订。服务器恢复后的下一次 Formal H1 必须重新冻结 latest accepted main 的
+  execution provenance。
 - 稳定实现：WP-02D3 implementation Commit 与 Formal H1 accepted implementation SHA 均为
   `1092d9c87bfff8ba6c1f2132734480112d7b5975`，准确定位是
   `Formal H1 execution orchestration / persistence hardening`。它不改变 H1 科学规格、环境科学、
@@ -349,3 +353,48 @@
 - 下一门禁：`Final Formal H1 execution-readiness freeze / runbook freeze`。该只读 freeze、docs
   checkpoint Commit/Push 与用户明确授权全部完成前，不运行 Formal H1；在有效 scientific gate
   outcome 完成解释前，不进入 prediction、forecast uncertainty、MAPPO 或 PyTorch/GPU training。
+
+## D-038：修订服务器不可用期间的研发顺序
+
+- 状态：已接受
+- 决策关系：D-002“先验证未来信息价值，再训练 MARL”继续有效且未被修订；official predictor
+  science 与 MAPPO science 仍须等待 H1 gate。D-035/D-036 的 next-gate 文字是已经完成阶段的历史
+  记录。D-037 的 WP-02D3 acceptance/science 继续有效，但其“`1092d9c...` 后永久只允许
+  docs/changelog”的未来 execution-baseline 条款由本决策修订。
+- 决策：服务器不可用期间，Mac 恢复正常 main-only 研发流程，允许 design、implementation、CPU
+  tests、tiny smoke、full patch review、用户手动 Commit/Push 与 GitHub Actions。WP-03A 可以合法
+  增加 source/tests/docs，不修改旧 Formal H1 runner 来放宽 provenance。
+- 继续锁定：Formal H1、正式 seeds/artifacts/results、large multi-seed science、official predictor /
+  uncertainty / forecast-control experiments、ID/OOD main experiments、MAPPO 与 GPU training。
+- Server queue：服务器恢复后同步 latest accepted main，重新冻结 Formal H1 accepted execution
+  baseline/provenance，重新做 readiness preflight，取得用户明确授权，再运行 Formal H1 与 primary
+  evidence audit。
+- 原因：不让服务器故障永久阻止安全、可审查的基础设施研发，同时保持 Formal H1 的假设、环境、
+  estimand、bootstrap、gate 与 scientific identities 不变。
+
+## D-039：冻结 WP-03A Prediction Interface & Dataset Protocol
+
+- 状态：已接受
+- 实现状态：设计决策已接受；candidate v3 独立 review 为 BLOCKER 0、MAJOR 1、MINOR 1，当前
+  candidate v4 只修复 signed-zero intrinsic-hash canonicalization 与本条 stale wording，仍须独立
+  review/acceptance，不能据此记录 accepted implementation。
+- Target：lead `1..P` 的 future realized zone-level arrival counts，shape `[P,Z]`、`int64`；不使用
+  intensity、future event list 或 controller-dependent state。
+- Information boundary：context 只含 boundary `t` 及以前的 realized zone counts、absolute step、
+  steps remaining 和静态 zone identity；训练 input 与 inference input 完全一致。
+- 时间语义：history 为 `t-L+1..t`，左 zero padding + mask；forecast row 0 为 `t+1`；target 在 episode
+  end 右 zero padding + mask；supervised anchor 为 `start <= t < stop-1`。
+- Interface：immutable natural-scale `PredictionContext`、`PredictionTarget`、`PredictionSample` 与
+  mandatory-mean/optional-variance-quantiles-scenarios `DemandForecast`；PyTorch-neutral，不选择模型
+  architecture。
+- Leakage guards：online history 不接收 `DemandTrace`；offline context 只复制 realized count prefix；
+  source/provenance 与 controller-visible payload 分离；ZoneSchema 与 safe-loaded artifact source
+  hard binding；authoritative source 内部计算不含 intensity/metadata 的 intrinsic realized-trace
+  identity，并把 realized float fields 的 `+0.0`/`-0.0` canonicalize 为相同逻辑值；authoritative
+  split 只能从 verified artifacts 构造/复核；全 trace split、global
+  seed/content/realized-trace/trace ID disjointness 与 OOD condition holdout；forecast 必须与其 context
+  的 boundary、horizon、zone schema、zone count 和 terminal mask 完全一致。
+- Reproducibility：ZoneSchema/protocol/condition/sample/split 使用既有 stable config hash；protocol /
+  manifest strict canonical JSON、exact schema、no-overwrite 与 strict readback；dataset derivation RNG-free。
+- 非目标：不冻结正式 L/P、normalization、split seeds、OOD conditions、predictor、controller、training、
+  reward 或 MAPPO。没有 forecasting 改善 control 的科学结论。

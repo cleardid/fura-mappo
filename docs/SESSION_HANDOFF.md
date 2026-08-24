@@ -1,24 +1,23 @@
 # 会话交接
 
-更新日期：2026-08-21
+更新日期：2026-08-23
 
 ## 当前唯一任务
 
-下一阶段唯一任务为：
+当前唯一任务为：
 
 ```text
-Final Formal H1 execution-readiness freeze / runbook freeze
+WP-03A Prediction Interface & Dataset Protocol implementation review
 
 DO NOT RUN FORMAL H1 YET
 Formal traces = 0 / 256
-
-accepted implementation SHA =
-1092d9c87bfff8ba6c1f2132734480112d7b5975
 ```
 
 WP-02D1、WP-02D2 与 WP-02D3 均已完成并接受，但 WP-02D overall 仍在进行中，因为 Formal H1
-scientific gate 尚未执行。本 docs-only checkpoint 只记录 accepted facts，不启动或解锁 formal
-data generation。未来 docs checkpoint SHA 不替代上述 accepted implementation SHA。
+scientific gate 尚未执行。服务器不可用期间允许 WP-03A architecture-neutral prediction interface /
+dataset infrastructure 实现与 CPU 审查，不启动或解锁 official prediction science、MAPPO 或 formal
+data generation。`1092d9c...` 保留为历史 WP-02D3 accepted implementation，不是 WP-03 source
+changes 后的未来 final execution baseline。
 
 ## 稳定基线
 
@@ -197,16 +196,17 @@ tests/test_formal_h1_runner.py
 ```
 
 Private runner `fura_mappo.experiments._formal_h1_runner` 未从 `experiments/__init__.py` 导出。
-未来冻结调用为：
+WP-02D3 接受时的冻结调用为：
 
 ```bash
 python -m fura_mappo.experiments._formal_h1_runner \
   --accepted-implementation-sha 1092d9c87bfff8ba6c1f2132734480112d7b5975
 ```
 
-本 checkpoint 禁止执行。未来 docs-only checkpoint Commit 是 `1092d9c...` 的合法
-`docs/**` / `CHANGELOG_*` descendant，但不是新的 implementation baseline，不得作为
-`--accepted-implementation-sha`。
+当前禁止执行。以下 docs-only descendant 与 hard-gate 规则准确记录 WP-02D3 当时的 accepted
+execution baseline；D-038 启动 WP-03 source development 后它们不再描述未来 latest-main
+execution baseline。服务器恢复后必须重新冻结 provenance，不得把 WP-03 source changes 误作旧
+command 的合法 descendant。
 
 ### Execution hard gates
 
@@ -333,13 +333,23 @@ F6B        1           1
 `NO_HEURISTIC_MISS_DETECTED_WITHIN_PREREGISTERED_BOUNDED_SUITE`。后者不表示 Primary optimal
 或 heuristic adequacy proven；两个标签都不是 Formal H1 scientific outcome。
 
-## 下一阶段 final readiness/runbook freeze 与当前禁止事项
+## WP-03A handoff 与当前禁止事项
 
-`Final Formal H1 execution-readiness freeze / runbook freeze` 必须在任何正式 primary trace 生成前
-只读验证：本 docs checkpoint 已 Commit/Push；current `main` clean；HEAD 等于 `origin/main`；
-`1092d9c...` 是 current HEAD ancestor；accepted SHA 后仅有 docs/changelog changes；loaded code
-来自当前 repo；exact spec/environment hashes 不变；formal root 不存在；traces 为 `0 / 256`；冻结
-调用精确无误；最后取得用户明确授权。
+WP-03A 冻结协议见 `docs/PREDICTION_PROTOCOL.md`。v3 独立 review 结论为 BLOCKER 0、MAJOR 1、
+MINOR 1，未通过 acceptance；唯一 MAJOR 是 raw float bytes 可用 `+0.0`/`-0.0` 绕过 intrinsic
+identity，MINOR 是 D-039 current candidate wording 过时。当前 candidate v4 在 canonical float64
+positions/priority 上把所有零统一为 `+0.0`，保留全部非零差异，并修正 D-039。此前 safe-loaded
+artifact trust boundary、`realized_trace_sha256` serialization/revalidation/global split guards、zone 与
+forecast binding 均保留。实现候选另含 immutable models、predictor
+Protocol、online history、offline dataset derivation、source/condition identity、trace-level split
+manifest 与 strict JSON serialization；不实现 predictor architecture、forecast-guided controller、
+normalization、training、PyTorch 或 MAPPO。候选必须完成 focused/relevant/full CPU tests、Ruff、format、
+diff-check、完整 review patch 与独立审查；Codex 不 Commit/Push/Tag。
+
+当前 Mac 未提交 v4 候选已完成：WP-03A focused `91 passed in 0.64s`；relevant regression
+`707 passed in 8.53s`；full CPU `812 passed in 11.95s`；Ruff、format 与 `git diff --check` 通过；
+只读重算的 H1 spec/environment identities 与冻结值一致。以上尚未经过独立 patch review，不得记为
+accepted implementation 或 scientific evidence。
 
 当前 Formal H1 未运行，formal primary traces 为 `0 / 256`，正式 seeds 仍为
 `20260819..20261074`。尚未生成或运行：
@@ -349,6 +359,8 @@ F6B        1           1
 - formal H=0 set、formal H=2 primary rollout、H sensitivity、stress sensitivity
 - formal point estimate、LCB/UCB 或 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome
 
-本 docs checkpoint 不启动或解锁上述工作。WP-02D overall 仍未完成。在 Formal H1 scientific
-gate 产生有效结果并完成解释前，不得进入 prediction、forecast uncertainty、MAPPO、PyTorch/GPU
-training 或 ID/OOD main experiment。
+WP-03A 不启动或解锁上述 formal 工作。WP-02D overall 仍未完成。服务器恢复后，必须同步 latest
+accepted main、重新冻结 Formal H1 execution provenance/accepted execution baseline、重新 preflight
+并取得用户明确授权。Formal H1 scientific gate 产生有效结果并完成解释前，不得进行 official
+predictor、forecast uncertainty/control、MAPPO、PyTorch/GPU training 或 ID/OOD main experiment；
+基础设施实现不构成 forecasting control-value claim。

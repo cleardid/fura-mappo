@@ -10,15 +10,21 @@
 - `docs/CODEX_WORKFLOW.md`：协作流程
 - `docs/DECISIONS.md`：关键决策
 - `docs/ANALYSIS_PLAN.md`：统计原则
+- `docs/PREDICTION_PROTOCOL.md`：WP-03A prediction interface/dataset 冻结协议
 
 ## 当前工作包
 
-WP-02D overall 进行中。WP-02D1 protocol/statistics baseline、WP-02D2
+WP-02D overall 进行中且 Formal H1 尚未运行。WP-02D1 protocol/statistics baseline、WP-02D2
 `bounded task-target root-information exhaustive diagnostic verifier` 与 WP-02D3
-`Formal H1 execution orchestration / persistence hardening` 均已完成并接受。当前唯一下一阶段是
-`Final Formal H1 execution-readiness freeze / runbook freeze`；Formal H1 尚未运行，formal primary
-traces 为 `0 / 256`。Formal H1 只能在本 docs-only checkpoint Commit/Push、最终只读 freeze 与
-用户明确授权全部完成后启动。
+`Formal H1 execution orchestration / persistence hardening` 均已完成并接受。服务器不可用期间当前
+工作包为 WP-03A Prediction Interface & Dataset Protocol implementation/review；只允许基础设施、
+CPU tests 与 tiny smoke，不解锁 official prediction science 或 MAPPO。Formal primary traces 为
+`0 / 256`。服务器恢复后必须同步 latest accepted main、重新冻结 Formal H1 execution provenance、
+完成 readiness preflight 并取得用户明确授权。
+
+当前是 candidate v4：v3 独立复审的 signed-zero intrinsic-hash MAJOR 与 D-039 stale wording MINOR
+已定向修复；realized positions/priority 的 `+0.0`/`-0.0` 现在具有相同 hash，真实非零差异保持可辨，
+仍待新的完整 patch 独立复审。
 
 优先读取：
 
@@ -27,6 +33,7 @@ traces 为 `0 / 256`。Formal H1 只能在本 docs-only checkpoint Commit/Push�
 - `docs/RESEARCH_PLAN.md`
 - `docs/ANALYSIS_PLAN.md`
 - `docs/DECISIONS.md`
+- `docs/PREDICTION_PROTOCOL.md`
 - `docs/WP02D_SPEC.md`
 - `CHANGELOG_WP02D1.md`
 - `CHANGELOG_WP02D2.md`
@@ -38,6 +45,12 @@ traces 为 `0 / 256`。Formal H1 只能在本 docs-only checkpoint Commit/Push�
 - `CHANGELOG_WP02B.md`
 - `src/fura_mappo/envs/`
 - `src/fura_mappo/baselines/`
+
+## WP-03A 当前文档
+
+- `docs/PREDICTION_PROTOCOL.md`
+- `src/fura_mappo/prediction/`
+- `tests/test_prediction_*.py`
 
 ## WP-02 完成文档
 

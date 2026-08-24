@@ -7,9 +7,14 @@
 - 研究目标：非平稳时空需求下，研究未来需求预测及不确定性对多智能体主动资源预置的价值。
 - `WP-01` 外生需求生成系统已完成。
 - WP-01 稳定实现：`29a042f7b9fc80d3356cd5c63df1cd26b4078d9b`，标签 `wp01c-stable`。
-- 当前进入 `WP-02`：资源服务环境与反应式/Oracle 控制基线。
-- WP-02 首阶段只做只读设计分析；设计确认前不得修改环境源码。
-- 不得提前实现预测模型、MAPPO、PyTorch 或 GPU 训练。
+- WP-02A/B/C/D1/D2/D3 已完成并接受；Formal H1 science 尚未执行。
+- 当前为 `WP-03A` candidate v4：只修复 v3 独立复审剩余的 signed-zero intrinsic-hash MAJOR 与
+  D-039 stale wording MINOR，等待新的完整 patch 独立审查。
+- 允许在 Mac 开发 architecture-neutral、PyTorch-neutral prediction interface/dataset 基础设施及
+  deterministic CPU tests；不得修改 WP-01/WP-02 冻结科学语义。
+- 正式 predictor 实验、uncertainty 实验、MAPPO、PyTorch/GPU training、ID/OOD 主实验继续锁定。
+- Formal H1 在服务器恢复后必须基于最新 accepted main 重新冻结 execution provenance，并由用户
+  明确授权；不得运行旧 Formal H1 command 或正式 seeds。
 
 ## 开发环境
 
