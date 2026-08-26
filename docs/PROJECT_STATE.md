@@ -1,6 +1,6 @@
 # 项目状态
 
-更新日期：2026-08-25
+更新日期：2026-08-26
 
 ## 已验证稳定基线
 
@@ -40,6 +40,7 @@ docs-only 收尾 Commit 不自引用自身 SHA；当前 HEAD 以 `git rev-parse 
 | WP-02D2 | 已完成 | bounded task-target root-information exhaustive diagnostic verifier 已接受 |
 | WP-02D3 | 已完成 | Formal H1 execution orchestration / persistence hardening 已接受 |
 | WP-03A | 已完成 | Prediction Interface & Dataset Protocol 已独立审查、Commit/Push，GitHub Actions 通过 |
+| WP-03B | 设计已冻结 | Prediction Baseline Scientific Protocol；仅 protocol acceptance，未实现或执行科学实验 |
 
 ## WP-01 冻结接口与协议
 
@@ -662,6 +663,111 @@ passed
 WP-03A engineering acceptance 证据；它们不是 Formal H1 evidence、predictor scientific validation、
 forecasting improves control、probabilistic uncertainty beneficial 或 MAPPO beneficial 的证据。
 
+## WP-03B Prediction Baseline Scientific Protocol 冻结状态
+
+WP-03B 的 architecture-neutral scientific design 已冻结，权威定义见
+`docs/PREDICTION_BASELINE_PROTOCOL.md`。Docs candidate v1 review 为 BLOCKER 0、MAJOR 2、MINOR 1；
+candidate v2 review 为 BLOCKER 0、MAJOR 3、MINOR 1；candidate v3 review 为 BLOCKER 0、MAJOR 2、
+MINOR 1；candidate v4 review 为 BLOCKER 0、MAJOR 2、MINOR 1。后续 focused revision 不预先声称
+approved；implementation preparation 仍以 independent docs review → user Commit/Push → GitHub
+Actions 完成作为门禁。本 acceptance 仅接受 protocol，不是 predictor performance、
+forecasting benefit、control value、uncertainty benefit 或 MAPPO evidence；未实现 predictor、baseline、
+metric evaluator 或 training code，也未运行 official prediction experiment。
+
+冻结的 operational hierarchy 为 B0 Zero、B1 Persistence、B2 Masked context mean、B3 validation-
+selected EWMA、B4 static train climatology、B5 absolute-step train climatology，以及 L0 learned
+point predictor。B2 在冻结 L grid 按 lower validation Primary RMSE、shorter L 锁定；B3 在完整
+L×alpha grid 按 lower validation Primary RMSE、shorter L、smaller alpha 锁定。Selected L 对应的
+`DatasetProtocolSpec`/SHA 与 B3 alpha 进入 provenance；随后才按 validation Primary RMSE 与
+`B0<B1<B2<B3<B4<B5` 比较六个 locked variants。B4 先求每条 train trace 的 unique-step zone mean，
+再对 train traces 等权平均；B5
+在每个 supported absolute step/zone 对 train traces 等权平均。所有 fitted statistics 只来自 train、
+不可由 sliding windows 重复加权，且作为 immutable artifact 在 validation/test/OOD 不再更新。
+
+Baseline selection 前 preflight train/validation/test_id/test_ood absolute-step support；对任意 executed
+`P`，B5 必须覆盖每个 required anchor `t` 与 valid `h in 1..P` 的 `t+h`。Primary P=2
+与分别具有独立 `DatasetProtocolSpec`/SHA、support preflight、baseline/evaluation records 的
+secondary P=4/P=8 使用同一 invariant；secondary support failure 不得 alter、rescue 或
+invalidate 已有效的 Primary P=2 result。任何 support gap 或 B0–B5 locked variant 不能在
+完整 validation set 产生 complete finite valid forecasts 时，状态为
+`PREDICTION_BASELINE_SELECTION_FAILURE`：无 B*，不得删除 baseline、缩小 hierarchy、
+penalize/fallback 或进入 official test。Preflight 通过并锁定后，official test
+execution/readback 的 support 缺失才进入 `PREDICTION_EVALUATION_FAILURE`。Unknown-step
+fallback 始终禁止。
+
+Layer A `PRE-TRAINING DATA/SEARCH FREEZE` 必须早于 B4/B5 或任何 train-fitted
+statistics、learned training、validation forecast/metric、early stopping、candidate/internal/B*
+selection。它锁定 ZoneSchema、Primary 与将执行 secondary protocol/SHA、source inventory、exact
+`DatasetSplitManifest`、全部 split membership/order/trace identities、calibration disposition、ID/OOD
+assignment、training seeds 与完整 search space/grid/budget/order/complexity key。一旦任何 fitting/training/
+validation activity 开始，不得移动、增删、替换 trace/seed，不得改 calibration、test membership、
+OOD assignment、protocol 或 inventory；B4/B5 与 train-fitted statistics 只能使用 frozen train。数值
+activity 前发现 invalid freeze 必须 STOP，仅可建立新的 explicit version；activity 后才发现则
+当前 experiment 为 development/protocol failure，必须使用新 identity 从 fitting/training/model
+selection 起完整重启，不得继承旧 numerical results。
+
+所有 official predictors/baselines 都必须满足
+`forecast = f(current PredictionContext, immutable fitted artifact)`，跨 `predict()` 调用不得保留
+hidden state、history、episode memory、previous forecast/target/error 或影响 output 的 call counter。
+冻结 Primary horizon `P=2`、secondary protocols `P in {4,8}`、history grid
+`L in {4,8,16,32}`、objective candidates O0 raw-scale MSE / O1 Poisson NLL。T0 identity / T1
+elementwise log1p 只作用于 `history_counts` count values；mask、absolute step、steps remaining、zone
+identity、prediction horizon、target/output 不 transform。Non-count feature encoding 必须在未来 config
+中预冻结；target/output/metrics 始终为 raw counts，output nonnegative 且不 round。
+
+Primary metric 为 trace-equal、zone-equal、horizon-equal raw-scale RMSE：先在每条 trace 内按
+`(h,z)` 平均 valid anchors 的 squared error，再对 trace/horizon/zone 等权平均并取平方根。Learned
+algorithm 至少使用 3 个预冻结 training seeds；其 Primary aggregate 先对各 seed 的同权 MSE 求均值，
+再开平方。每个 seed 只按自身 validation Primary RMSE 锁定 checkpoint；config score 为
+`Validation Algorithm RMSE = sqrt(mean_r(Validation MSE_r))`，test point estimate 为
+`Test Algorithm RMSE = sqrt(mean_r(Test MSE_r))`，不是 mean per-seed RMSE/best seed/ensemble。
+任一 fixed seed 缺失/crash 或 checkpoint/forecast/MSE/validation invalid 时，config 为
+`TRAINING_FAILURE`，没有 score 且不能进入 test；不得删除/替换/填充 seed。全部 configs 失败时为
+`PREDICTION_MODEL_SELECTION_FAILURE`，不产生 scientific result，也不与 Formal H1 `PROTOCOL_FAIL`
+混用。VALID configs 按 lower Validation Algorithm RMSE、lower predeclared model-complexity key、
+shorter L、O0<O1、T0<T1、canonical config ordering 唯一排序；这些 keys/schema/search space/order
+在任何 candidate training 前冻结。Test_id 与 test_ood 在同一 sealed phase 对相同 locked predictors
+做 one-shot evaluation。
+
+Primary test_id uncertainty 使用 paired whole-trace cluster percentile bootstrap，比较
+`Delta_RMSE = Test Algorithm RMSE - B* RMSE`。每个 replicate 对所有 fixed-seed runs 与 B* 使用
+相同 trace sample，计算 `Algorithm RMSE^(b)=sqrt(mean_r(MSE_r^(b)))` 后作差；只 resample test
+traces，不 resample training seeds。因此 CI 只表示 conditional on frozen seed set 的 test-trace
+sampling uncertainty；per-seed dispersion 单独报告。不得 bootstrap windows/cells/scenarios/best seed。
+Prediction bootstrap 使用独立 PCG64 namespace，不复用 H1 seed/resamples。ID、single-axis near-OOD
+与 held-out-family structural-OOD taxonomy 已保留；exact cells/weights/seeds/split sizes 与 bootstrap
+参数须在服务器恢复后的 official experiment spec 中、任何 execution 前冻结。
+
+Primary ID label 唯一定义为：`Delta_RMSE<0 AND CI_U<0` 得 `LEARNED_BETTER`；
+`Delta_RMSE>0 AND CI_L>0` 得 `LEARNED_WORSE`；其他得 `NO_CLEAR_DIFFERENCE`。协议没有 practical-
+effect delta，必须报告 raw effect/CI；NO_CLEAR_DIFFERENCE 不表示等价，secondary/OOD/control 不得
+改变 label。该 label 只描述 prediction error，不是 Formal H1 verdict、control gate 或 MAPPO gate。
+
+Layer B `PRE-TEST EXECUTION FREEZE` 必须在 first official test execution 前锁定 selected B*/B2/B3、
+selected learned config、全部 checkpoints、exact test identities/order、metric/bootstrap implementation 及
+parameters、final OOD cells 与 Git/runtime，且不得修改 Layer A。Official evaluation 必须完整匹配
+locked test_id/test_ood trace sets/order、fixed checkpoints、B*、
+protocol/manifest/schema identities，并覆盖每个 valid anchor/horizon/zone；forecasts、bindings、metric /
+bootstrap inputs 必须 finite/valid/complete 且无 missing/duplicate record。任一失败为
+`PREDICTION_EVALUATION_FAILURE`：无 official Test Algorithm score、B* comparison、Delta/CI 或
+scientific label；必须记录 reason。禁止 drop/exclude/replace/impute/fallback/remaining-seed average /
+smaller-n continuation；zero demand 合法。第一次 official forecast generation、target/result
+evaluation、metric/bootstrap computation 或 scientific readback 立即使 exact locked test_id/test_ood 成为
+`SPENT TEST SET`，无论 success、failure 或 partial failure；不读取 target/outcome/prediction result 的 pure
+structural metadata preflight 不构成 exposure。Failure record 与 spent identities 必须保留，spent sets 只可
+audit/debug，不得迁入 train/validation、用于 hyperparameter/B* selection 或选择 recovery protocol，也
+不得产生 replacement score/CI/label。新正式 recovery 必须使用 fresh previously unexposed
+test_id/test_ood traces，它们与 spent sets 在 trace_id、seed、artifact content SHA 与
+`realized_trace_sha256` 上全局不相交，满足 condition/OOD rules，并建立新 manifest、test
+identities、protocol/version/provenance 及两层 freeze；不得覆盖第一次 failure。
+
+Learned config 只能依据 Validation Algorithm RMSE 选择，`B*` 只能依据 deterministic validation
+baseline Primary RMSE 选择，且都不能读取 control/Oracle/MAPPO outcome。`DemandTrace.intensities`
+diagnostic 在 WP-03B official protocol
+中禁用。下一阶段只记录为
+`WP-03B implementation preparation`，且只能在本 docs patch 独立审查、用户手动 Commit/Push 与
+GitHub Actions 通过后开始。
+
 ## 当前执行策略与 server queue
 
 WP-02D1、WP-02D2、WP-02D3 与 WP-03A 均已完成并接受，但 WP-02D overall 仍在进行中，因为
@@ -677,10 +783,9 @@ artifact inventory、formal paired JSONL、formal aggregate 或 formal primary v
 formal H=0 set、formal H=2 primary rollout、H sensitivity 或 stress sensitivity。不得记录任何
 formal point estimate、LCB/UCB 或 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
 
-下一工作包为 `WP-03B — Prediction Baseline Scientific Protocol Design`。在 Formal H1 scientific
-outcome 产生前，WP-03B 只允许 read-only analysis、scientific protocol design、candidate
-metric/loss/evaluation design 与 architecture-neutral experiment planning。不得进行 official predictor
-training、official prediction dataset generation、official ID/OOD experiment、large multi-seed
-prediction runs、GPU predictor training、forecast-guided controller main experiment 或 MAPPO training；
-本 checkpoint 也不决定 Transformer/LSTM/TCN、optimizer、learning rate、hidden size、official L/P、
-official split sizes、official prediction seeds 或 MAPPO architecture。
+WP-03B scientific design 已冻结。下一阶段只记录为 `WP-03B implementation preparation`，且必须
+等待本 docs patch 独立审查、用户手动 Commit/Push 与 GitHub Actions 通过。Formal H1 scientific
+outcome 产生前仍不得进行 official predictor training、official prediction dataset generation、official
+ID/OOD experiment、large multi-seed prediction runs、GPU predictor training、forecast-guided controller
+main experiment 或 MAPPO training；也不决定 Transformer/LSTM/TCN/MLP、optimizer、learning rate、
+hidden size、official split sizes、official prediction seeds 或 MAPPO architecture。

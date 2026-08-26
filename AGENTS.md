@@ -8,10 +8,16 @@
 - `WP-01` 外生需求生成系统已完成。
 - WP-01 稳定实现：`29a042f7b9fc80d3356cd5c63df1cd26b4078d9b`，标签 `wp01c-stable`。
 - WP-02A/B/C/D1/D2/D3 已完成并接受；Formal H1 science 尚未执行。
-- 当前为 `WP-03A` candidate v4：只修复 v3 独立复审剩余的 signed-zero intrinsic-hash MAJOR 与
-  D-039 stale wording MINOR，等待新的完整 patch 独立审查。
-- 允许在 Mac 开发 architecture-neutral、PyTorch-neutral prediction interface/dataset 基础设施及
-  deterministic CPU tests；不得修改 WP-01/WP-02 冻结科学语义。
+- WP-03A Prediction Interface & Dataset Protocol 已完成并接受；accepted implementation Commit 为
+  `13cb39933ac65926332ca6c528ef271e1c739aa5`。
+- 当前阶段为 `WP-03B — Prediction Baseline Scientific Protocol Design Freeze` acceptance checkpoint，
+  只允许治理文档与 architecture-neutral scientific protocol；不得修改 WP-01/WP-02 冻结科学语义。
+- 历史 candidate v4 独立 review 为 BLOCKER 0、MAJOR 2、MINOR 1；后续 focused revision 的 acceptance
+  必须以独立审查确认事实为准，不在治理文档中预先声称 approved。
+- `WP-03B implementation preparation` 只能在 design-freeze docs patch 独立审查、用户手动
+  Commit/Push 与 GitHub Actions 通过后开始；official prediction science 仍受 Formal H1 门禁约束。
+- WP-03B official predictors/baselines 必须是 deterministic、stateless、跨调用无 persistent state，
+  且只能读取 WP-03A 冻结的有限 causal `PredictionContext` 与 immutable fitted artifact。
 - 正式 predictor 实验、uncertainty 实验、MAPPO、PyTorch/GPU training、ID/OOD 主实验继续锁定。
 - Formal H1 在服务器恢复后必须基于最新 accepted main 重新冻结 execution provenance，并由用户
   明确授权；不得运行旧 Formal H1 command 或正式 seeds。

@@ -1,8 +1,11 @@
 # WP-03A Prediction Interface & Dataset Protocol
 
-状态：设计决策已接受；candidate v3 独立复审为 BLOCKER 0、MAJOR 1、MINOR 1，candidate v4
-只修复 realized float signed-zero canonicalization 与 D-039 stale wording 后等待完整 patch 独立审查。
-本文只定义 prediction 基础设施，不是预测性能或控制价值的科学结果。
+状态：设计与实现均已接受。Accepted implementation Commit 为
+`13cb39933ac65926332ca6c528ef271e1c739aa5`；approved candidate v4 patch SHA-256 为
+`5f5be8109784a5783caefc1e129edf2f2deb53aa52379b8be0c2c4120f8384b9`；独立 review 为
+BLOCKER 0、MAJOR 0、MINOR 0，GitHub Actions passed。本文只定义 prediction 基础设施，不是
+预测性能或控制价值的科学结果。WP-03B baseline/evaluation 冻结协议见
+`docs/PREDICTION_BASELINE_PROTOCOL.md`。
 
 ## 1. 范围与治理
 
