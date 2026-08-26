@@ -1,10 +1,14 @@
 """架构中立的 demand prediction interface 与 dataset protocol。"""
 
 from fura_mappo.prediction.baselines import (
+    AbsoluteStepClimatologyDemandPredictor,
     EWMADemandPredictor,
     MaskedMeanDemandPredictor,
     PersistenceDemandPredictor,
+    StaticClimatologyDemandPredictor,
     ZeroDemandPredictor,
+    fit_absolute_step_train_climatology,
+    fit_static_train_climatology,
 )
 from fura_mappo.prediction.dataset import (
     DatasetProtocolSpec,
@@ -46,6 +50,7 @@ from fura_mappo.prediction.serialization import (
 )
 
 __all__ = [
+    "AbsoluteStepClimatologyDemandPredictor",
     "DatasetProtocolSpec",
     "DatasetSplitManifest",
     "DemandForecast",
@@ -62,6 +67,7 @@ __all__ = [
     "PredictionTarget",
     "SplitEntry",
     "SplitLabel",
+    "StaticClimatologyDemandPredictor",
     "VerifiedPredictionArtifact",
     "ZeroDemandPredictor",
     "ZoneSchema",
@@ -74,6 +80,8 @@ __all__ = [
     "derive_prediction_samples_from_artifact",
     "derive_synthetic_prediction_samples",
     "derive_prediction_target",
+    "fit_absolute_step_train_climatology",
+    "fit_static_train_climatology",
     "load_verified_prediction_artifact",
     "read_dataset_protocol",
     "read_split_manifest",
