@@ -31,6 +31,12 @@ from fura_mappo.prediction.dataset import (
 )
 from fura_mappo.prediction.history import ObservedDemandHistory
 from fura_mappo.prediction.interfaces import DemandPredictor, validate_forecast_for_context
+from fura_mappo.prediction.metrics import (
+    PointForecastRecord,
+    PointMetricSummary,
+    TracePointMetrics,
+    evaluate_point_forecasts,
+)
 from fura_mappo.prediction.models import (
     DemandForecast,
     ForecastProvenance,
@@ -61,6 +67,8 @@ __all__ = [
     "MaskedMeanDemandPredictor",
     "ObservedDemandHistory",
     "PersistenceDemandPredictor",
+    "PointForecastRecord",
+    "PointMetricSummary",
     "PredictionContext",
     "PredictionSample",
     "PredictionSource",
@@ -68,6 +76,7 @@ __all__ = [
     "SplitEntry",
     "SplitLabel",
     "StaticClimatologyDemandPredictor",
+    "TracePointMetrics",
     "VerifiedPredictionArtifact",
     "ZeroDemandPredictor",
     "ZoneSchema",
@@ -80,6 +89,7 @@ __all__ = [
     "derive_prediction_samples_from_artifact",
     "derive_synthetic_prediction_samples",
     "derive_prediction_target",
+    "evaluate_point_forecasts",
     "fit_absolute_step_train_climatology",
     "fit_static_train_climatology",
     "load_verified_prediction_artifact",
