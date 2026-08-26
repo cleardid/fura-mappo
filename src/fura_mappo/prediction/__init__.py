@@ -1,5 +1,11 @@
 """架构中立的 demand prediction interface 与 dataset protocol。"""
 
+from fura_mappo.prediction.baselines import (
+    EWMADemandPredictor,
+    MaskedMeanDemandPredictor,
+    PersistenceDemandPredictor,
+    ZeroDemandPredictor,
+)
 from fura_mappo.prediction.dataset import (
     DatasetProtocolSpec,
     DatasetSplitManifest,
@@ -44,9 +50,12 @@ __all__ = [
     "DatasetSplitManifest",
     "DemandForecast",
     "DemandPredictor",
+    "EWMADemandPredictor",
     "ForecastProvenance",
     "ForecastRecord",
+    "MaskedMeanDemandPredictor",
     "ObservedDemandHistory",
+    "PersistenceDemandPredictor",
     "PredictionContext",
     "PredictionSample",
     "PredictionSource",
@@ -54,6 +63,7 @@ __all__ = [
     "SplitEntry",
     "SplitLabel",
     "VerifiedPredictionArtifact",
+    "ZeroDemandPredictor",
     "ZoneSchema",
     "build_split_manifest_from_artifacts",
     "compute_condition_sha256",
