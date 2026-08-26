@@ -46,6 +46,13 @@ from fura_mappo.prediction.models import (
     PredictionTarget,
     ZoneSchema,
 )
+from fura_mappo.prediction.selection import (
+    BaselineKind,
+    BaselineSelectionFailure,
+    BaselineSelectionResult,
+    BaselineValidationCandidate,
+    select_validation_baselines,
+)
 from fura_mappo.prediction.serialization import (
     dataset_protocol_to_dict,
     read_dataset_protocol,
@@ -57,6 +64,10 @@ from fura_mappo.prediction.serialization import (
 
 __all__ = [
     "AbsoluteStepClimatologyDemandPredictor",
+    "BaselineKind",
+    "BaselineSelectionFailure",
+    "BaselineSelectionResult",
+    "BaselineValidationCandidate",
     "DatasetProtocolSpec",
     "DatasetSplitManifest",
     "DemandForecast",
@@ -95,6 +106,7 @@ __all__ = [
     "load_verified_prediction_artifact",
     "read_dataset_protocol",
     "read_split_manifest",
+    "select_validation_baselines",
     "split_manifest_to_dict",
     "validate_forecast_for_context",
     "validate_prediction_source_for_artifact",
