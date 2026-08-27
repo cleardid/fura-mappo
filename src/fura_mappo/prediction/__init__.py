@@ -10,6 +10,11 @@ from fura_mappo.prediction.baselines import (
     fit_absolute_step_train_climatology,
     fit_static_train_climatology,
 )
+from fura_mappo.prediction.bootstrap import (
+    PairedTraceBootstrapResult,
+    PredictionBootstrapSpec,
+    bootstrap_locked_test_delta_rmse,
+)
 from fura_mappo.prediction.comparison import (
     LockedTestPointEstimate,
     TrainingSeedTestResult,
@@ -97,10 +102,12 @@ __all__ = [
     "LockedTestPointEstimate",
     "MaskedMeanDemandPredictor",
     "ObservedDemandHistory",
+    "PairedTraceBootstrapResult",
     "PersistenceDemandPredictor",
     "PointForecastRecord",
     "PointMetricSummary",
     "PointObjectiveKind",
+    "PredictionBootstrapSpec",
     "PredictionContext",
     "PredictionModelSelectionFailure",
     "PredictionSample",
@@ -115,6 +122,7 @@ __all__ = [
     "VerifiedPredictionArtifact",
     "ZeroDemandPredictor",
     "ZoneSchema",
+    "bootstrap_locked_test_delta_rmse",
     "build_split_manifest_from_artifacts",
     "compute_condition_sha256",
     "compute_locked_test_point_estimate",
