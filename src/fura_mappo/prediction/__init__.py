@@ -10,6 +10,11 @@ from fura_mappo.prediction.baselines import (
     fit_absolute_step_train_climatology,
     fit_static_train_climatology,
 )
+from fura_mappo.prediction.comparison import (
+    LockedTestPointEstimate,
+    TrainingSeedTestResult,
+    compute_locked_test_point_estimate,
+)
 from fura_mappo.prediction.dataset import (
     DatasetProtocolSpec,
     DatasetSplitManifest,
@@ -89,6 +94,7 @@ __all__ = [
     "LearnedConfigStatus",
     "LearnedConfigValidationCandidate",
     "LearnedModelSelectionResult",
+    "LockedTestPointEstimate",
     "MaskedMeanDemandPredictor",
     "ObservedDemandHistory",
     "PersistenceDemandPredictor",
@@ -104,12 +110,14 @@ __all__ = [
     "SplitLabel",
     "StaticClimatologyDemandPredictor",
     "TracePointMetrics",
+    "TrainingSeedTestResult",
     "TrainingSeedValidationResult",
     "VerifiedPredictionArtifact",
     "ZeroDemandPredictor",
     "ZoneSchema",
     "build_split_manifest_from_artifacts",
     "compute_condition_sha256",
+    "compute_locked_test_point_estimate",
     "compute_realized_trace_sha256",
     "compute_sample_id",
     "dataset_protocol_to_dict",
