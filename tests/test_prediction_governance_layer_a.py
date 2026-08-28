@@ -791,7 +791,22 @@ def test_direct_construction_docstring_states_authoritative_trust_boundary() -> 
 
 
 def test_production_governance_has_no_data_training_selection_or_layer_b_surface() -> None:
-    source = inspect.getsource(governance_module)
+    layer_a_definitions = (
+        governance_module._freeze_failure,
+        governance_module._normalize_sha256,
+        governance_module._normalize_nonnegative_integer,
+        governance_module._normalize_secondary_protocols,
+        governance_module._validate_manifest,
+        governance_module._normalize_ood_assignments,
+        governance_module._normalize_fixed_training_seeds,
+        governance_module._normalize_learned_config_identities,
+        governance_module._assignment_identity,
+        governance_module._candidate_identity,
+        governance_module._pretraining_freeze_identity,
+        PreTrainingFreeze,
+        build_pretraining_freeze,
+    )
+    source = "\n".join(inspect.getsource(definition) for definition in layer_a_definitions)
     forbidden = (
         "numpy",
         ".intensities",
@@ -804,7 +819,11 @@ def test_production_governance_has_no_data_training_selection_or_layer_b_surface
         "checkpoint_sha256",
         "TRAINING_STARTED",
         "TEST_STARTED",
-        "SPENT",
+        "TestSetDisposition",
+        "FirstOfficialTestExecution",
+        "SealedEvaluationState",
+        "selected_baseline",
+        "selected_learned_config",
         "90260819",
         "50000",
     )

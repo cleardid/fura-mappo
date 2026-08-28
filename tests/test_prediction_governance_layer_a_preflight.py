@@ -478,7 +478,17 @@ def test_support_failure_does_not_repair_or_mutate_freeze(tmp_path: Path) -> Non
 
 
 def test_production_preflight_only_reads_frozen_scalar_source_geometry() -> None:
-    source = inspect.getsource(governance_module)
+    preflight_definitions = (
+        governance_module._freeze_failure,
+        governance_module._normalize_sha256,
+        governance_module._normalize_nonnegative_integer,
+        governance_module.B5SupportPreflightResult,
+        governance_module._resolve_frozen_protocol,
+        governance_module._validate_preflight_artifacts,
+        governance_module._b5_support_failure,
+        preflight_layer_a_b5_support,
+    )
+    source = "\n".join(inspect.getsource(definition) for definition in preflight_definitions)
     preflight_source = inspect.getsource(preflight_layer_a_b5_support)
     forbidden = (
         ".artifact",

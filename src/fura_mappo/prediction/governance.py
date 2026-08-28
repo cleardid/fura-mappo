@@ -29,6 +29,8 @@ _PRE_TRAINING_FREEZE_VERSION = 1
 _PRE_TRAINING_FREEZE_FAILURE_STATUS = "PRE_TRAINING_DATA_FREEZE_FAILURE"
 _PRE_TEST_FREEZE_SCHEMA = "fura-mappo.prediction-pre-test-freeze"
 _PRE_TEST_FREEZE_VERSION = 1
+_SEALED_EVALUATION_STATE_SCHEMA = "fura-mappo.prediction-sealed-evaluation-state"
+_SEALED_EVALUATION_STATE_VERSION = 1
 _LOCKED_LEARNED_PREDICTOR_SCHEMA = "fura-mappo.prediction-locked-learned-predictor"
 _LOCKED_LEARNED_PREDICTOR_VERSION = 1
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
@@ -97,6 +99,27 @@ class PredictionOODKind(str, Enum):
     ID = "ID"
     NEAR_OOD = "NEAR_OOD"
     STRUCTURAL_OOD = "STRUCTURAL_OOD"
+
+
+class TestSetDisposition(str, Enum):
+    """Sealed prediction test sets 的精确 one-shot disposition。"""
+
+    UNSPENT = "UNSPENT"
+    SPENT = "SPENT"
+
+
+_UNEXPOSED_TEST_SET_DISPOSITION = TestSetDisposition.UNSPENT
+_EXPOSED_TEST_SET_DISPOSITION = TestSetDisposition.SPENT
+
+
+class OfficialTestExecutionKind(str, Enum):
+    """会首次暴露 sealed test sets 的 official action 分类。"""
+
+    FORECAST_GENERATION = "FORECAST_GENERATION"
+    TARGET_RESULT_EVALUATION = "TARGET_RESULT_EVALUATION"
+    METRIC_COMPUTATION = "METRIC_COMPUTATION"
+    BOOTSTRAP_COMPUTATION = "BOOTSTRAP_COMPUTATION"
+    SCIENTIFIC_RESULT_READBACK = "SCIENTIFIC_RESULT_READBACK"
 
 
 @dataclass(frozen=True, slots=True)
@@ -1346,6 +1369,271 @@ def build_pretest_freeze(
         official_failure_state_plan_sha256=official_failure_state_plan_sha256,
         git_commit_sha=git_commit_sha,
         runtime_provenance_sha256=runtime_provenance_sha256,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class FirstOfficialTestExecution:
+    """首次触发 sealed test exposure 的 immutable governance identity。
+
+    本对象只记录已注册 Layer-B freeze、test split 与 action kind；它不执行 action，
+    也不保存任何 numerical outcome。
+    """
+
+    pretest_freeze_sha256: str
+    split: SplitLabel
+    kind: OfficialTestExecutionKind
+
+    def __post_init__(self) -> None:
+        """验证 exact Layer-B SHA、test-only split 与 execution kind。"""
+
+        pretest_freeze_sha256 = _normalize_sha256(
+            self.pretest_freeze_sha256,
+            "pretest_freeze_sha256",
+        )
+        if not isinstance(self.split, SplitLabel):
+            raise TypeError("split 必须是 SplitLabel")
+        if self.split not in {SplitLabel.TEST_ID, SplitLabel.TEST_OOD}:
+            raise ValueError("split 必须是 TEST_ID 或 TEST_OOD")
+        if not isinstance(self.kind, OfficialTestExecutionKind):
+            raise TypeError("kind 必须是 OfficialTestExecutionKind")
+        object.__setattr__(self, "pretest_freeze_sha256", pretest_freeze_sha256)
+
+
+def _normalize_identity_tuple(value: object, name: str) -> tuple[str, ...]:
+    """把 finite iterable 规范为保持 caller 顺序的安全 identity tuple。"""
+
+    if isinstance(value, (str, bytes, bytearray)):
+        raise TypeError(f"{name} 必须是有限 iterable")
+    try:
+        identities = tuple(value)  # type: ignore[arg-type]
+    except TypeError as error:
+        raise TypeError(f"{name} 必须是有限 iterable") from error
+    if any(
+        not isinstance(identity, str) or _SAFE_ID_PATTERN.fullmatch(identity) is None
+        for identity in identities
+    ):
+        raise ValueError(f"{name} 必须全部是安全的 1..255 字符标识符")
+    return identities
+
+
+def _normalize_registered_pretest_freezes(value: object) -> tuple[str, ...]:
+    """验证 registered Layer-B SHA tuple，不在 direct constructor 中增删或排序。"""
+
+    if isinstance(value, (str, bytes, bytearray)):
+        raise TypeError("registered_pretest_freeze_sha256s 必须是有限 iterable")
+    try:
+        identities = tuple(value)  # type: ignore[arg-type]
+    except TypeError as error:
+        raise TypeError("registered_pretest_freeze_sha256s 必须是有限 iterable") from error
+    return tuple(
+        _normalize_sha256(identity, "registered pretest freeze SHA") for identity in identities
+    )
+
+
+def _first_official_test_execution_identity(
+    first_execution: FirstOfficialTestExecution,
+) -> dict[str, object]:
+    """返回 first exposure 的 canonical identity tree。"""
+
+    return {
+        "pretest_freeze_sha256": first_execution.pretest_freeze_sha256,
+        "split": first_execution.split.value,
+        "kind": first_execution.kind.value,
+    }
+
+
+def _sealed_evaluation_state_identity(
+    state: SealedEvaluationState,
+) -> dict[str, object]:
+    """返回不含 self hash 的 canonical sealed-state identity tree。"""
+
+    first_execution = state.first_official_test_execution
+    return {
+        "schema": state.schema,
+        "version": state.version,
+        "pretraining_freeze_sha256": state.pretraining_freeze_sha256,
+        "registered_pretest_freeze_sha256s": list(state.registered_pretest_freeze_sha256s),
+        "test_id_trace_ids": list(state.test_id_trace_ids),
+        "test_ood_trace_ids": list(state.test_ood_trace_ids),
+        "disposition": state.disposition.value,
+        "first_official_test_execution": (
+            "ABSENT"
+            if first_execution is None
+            else _first_official_test_execution_identity(first_execution)
+        ),
+    }
+
+
+@dataclass(frozen=True, slots=True)
+class SealedEvaluationState:
+    """Immutable sealed test-set disposition 与 first-exposure identity。
+
+    直接构造只证明字段间 structural consistency。official 初始 unexposed phase 必须通过
+    :func:`build_sealed_evaluation_state` 注册完整的 Layer-B freeze 集合；official first
+    transition 必须通过 :func:`record_first_official_test_execution`。本对象不授权或执行
+    forecast、evaluation、metric、bootstrap 或 result readback。
+    """
+
+    pretraining_freeze_sha256: str
+    registered_pretest_freeze_sha256s: tuple[str, ...]
+    test_id_trace_ids: tuple[str, ...]
+    test_ood_trace_ids: tuple[str, ...]
+    disposition: TestSetDisposition
+    first_official_test_execution: FirstOfficialTestExecution | None
+    schema: str = _SEALED_EVALUATION_STATE_SCHEMA
+    version: int = _SEALED_EVALUATION_STATE_VERSION
+    sha256: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        """验证 structural consistency 并计算 deterministic state hash。"""
+
+        pretraining_freeze_sha256 = _normalize_sha256(
+            self.pretraining_freeze_sha256,
+            "pretraining_freeze_sha256",
+        )
+        registered = _normalize_registered_pretest_freezes(self.registered_pretest_freeze_sha256s)
+        test_id_trace_ids = _normalize_identity_tuple(
+            self.test_id_trace_ids,
+            "test_id_trace_ids",
+        )
+        test_ood_trace_ids = _normalize_identity_tuple(
+            self.test_ood_trace_ids,
+            "test_ood_trace_ids",
+        )
+        if not isinstance(self.disposition, TestSetDisposition):
+            raise TypeError("disposition 必须是 TestSetDisposition")
+        first_execution = self.first_official_test_execution
+        if first_execution is not None and not isinstance(
+            first_execution,
+            FirstOfficialTestExecution,
+        ):
+            raise TypeError(
+                "first_official_test_execution 必须是 FirstOfficialTestExecution 或 None"
+            )
+        if self.disposition is _UNEXPOSED_TEST_SET_DISPOSITION and first_execution is not None:
+            raise ValueError("unexposed state 不得包含 first official execution")
+        if self.disposition is _EXPOSED_TEST_SET_DISPOSITION and first_execution is None:
+            raise ValueError("exposed state 必须包含 first official execution")
+        if first_execution is not None and first_execution.pretest_freeze_sha256 not in registered:
+            raise ValueError("first official execution 必须引用 registered PreTestFreeze")
+        if (
+            type(self.schema) is not str
+            or self.schema != _SEALED_EVALUATION_STATE_SCHEMA
+            or type(self.version) is not int
+            or self.version != _SEALED_EVALUATION_STATE_VERSION
+        ):
+            raise ValueError("sealed evaluation state schema/version 不受支持")
+
+        object.__setattr__(
+            self,
+            "pretraining_freeze_sha256",
+            pretraining_freeze_sha256,
+        )
+        object.__setattr__(
+            self,
+            "registered_pretest_freeze_sha256s",
+            registered,
+        )
+        object.__setattr__(self, "test_id_trace_ids", test_id_trace_ids)
+        object.__setattr__(self, "test_ood_trace_ids", test_ood_trace_ids)
+        object.__setattr__(
+            self,
+            "sha256",
+            compute_config_hash(_sealed_evaluation_state_identity(self)),
+        )
+
+
+def build_sealed_evaluation_state(
+    pretest_freezes: Iterable[PreTestFreeze],
+) -> SealedEvaluationState:
+    """注册完整 Layer-B freeze 集合并建立 initial unexposed sealed phase。
+
+    这是 official initial-state trust boundary：全部 registered freezes 必须在首次 exposure
+    之前一次性提供，并共享 exact Layer-A 与 test-set identities。此函数只注册 identities，
+    不执行任何 official action，也不会改变 test-set disposition。
+    """
+
+    try:
+        freezes = tuple(pretest_freezes)
+    except TypeError as error:
+        raise TypeError("pretest_freezes 必须是有限 iterable") from error
+    if not freezes:
+        raise ValueError("pretest_freezes 必须非空")
+    if any(not isinstance(freeze, PreTestFreeze) for freeze in freezes):
+        raise TypeError("pretest_freezes 必须全部是 PreTestFreeze")
+
+    registered = tuple(freeze.sha256 for freeze in freezes)
+    if len(registered) != len(set(registered)):
+        raise ValueError("PreTestFreeze SHA 必须全部唯一")
+    first = freezes[0]
+    shared_identity = (
+        first.pretraining_freeze_sha256,
+        first.zone_schema_sha256,
+        first.test_id_trace_ids,
+        first.test_ood_trace_ids,
+    )
+    if any(
+        (
+            freeze.pretraining_freeze_sha256,
+            freeze.zone_schema_sha256,
+            freeze.test_id_trace_ids,
+            freeze.test_ood_trace_ids,
+        )
+        != shared_identity
+        for freeze in freezes[1:]
+    ):
+        raise ValueError("全部 PreTestFreeze 必须共享 exact Layer-A test-set identity")
+
+    test_id_trace_ids = tuple(first.test_id_trace_ids)
+    test_ood_trace_ids = tuple(first.test_ood_trace_ids)
+    if not test_id_trace_ids or not test_ood_trace_ids:
+        raise ValueError("TEST_ID 与 TEST_OOD 必须都非空")
+    if len(test_id_trace_ids) != len(set(test_id_trace_ids)):
+        raise ValueError("TEST_ID trace identities 不得重复")
+    if len(test_ood_trace_ids) != len(set(test_ood_trace_ids)):
+        raise ValueError("TEST_OOD trace identities 不得重复")
+    if set(test_id_trace_ids) & set(test_ood_trace_ids):
+        raise ValueError("TEST_ID 与 TEST_OOD trace identities 不得重叠")
+
+    return SealedEvaluationState(
+        pretraining_freeze_sha256=first.pretraining_freeze_sha256,
+        registered_pretest_freeze_sha256s=tuple(sorted(registered)),
+        test_id_trace_ids=test_id_trace_ids,
+        test_ood_trace_ids=test_ood_trace_ids,
+        disposition=_UNEXPOSED_TEST_SET_DISPOSITION,
+        first_official_test_execution=None,
+    )
+
+
+def record_first_official_test_execution(
+    state: SealedEvaluationState,
+    first_execution: FirstOfficialTestExecution,
+) -> SealedEvaluationState:
+    """在 numerical action 之前记录唯一 unexposed -> exposed governance transition。
+
+    本函数只记录不可逆的 first-exposure identity，不运行 action。trigger 属于 TEST_ID 或
+    TEST_OOD 时，state 中两个 frozen test sets 同时成为 one-shot exposed test sets。
+    """
+
+    if not isinstance(state, SealedEvaluationState):
+        raise TypeError("state 必须是 SealedEvaluationState")
+    if not isinstance(first_execution, FirstOfficialTestExecution):
+        raise TypeError("first_execution 必须是 FirstOfficialTestExecution")
+    if state.disposition is not _UNEXPOSED_TEST_SET_DISPOSITION:
+        raise ValueError("只有 unexposed state 可以记录 first official execution")
+    if state.first_official_test_execution is not None:
+        raise ValueError("unexposed state 不得已有 first official execution")
+    if first_execution.pretest_freeze_sha256 not in state.registered_pretest_freeze_sha256s:
+        raise ValueError("first_execution 必须引用 registered PreTestFreeze")
+
+    return SealedEvaluationState(
+        pretraining_freeze_sha256=state.pretraining_freeze_sha256,
+        registered_pretest_freeze_sha256s=state.registered_pretest_freeze_sha256s,
+        test_id_trace_ids=state.test_id_trace_ids,
+        test_ood_trace_ids=state.test_ood_trace_ids,
+        disposition=_EXPOSED_TEST_SET_DISPOSITION,
+        first_official_test_execution=first_execution,
     )
 
 
