@@ -47,6 +47,7 @@ from fura_mappo.prediction.governance import (
     LockedBaselineFreezeIdentity,
     LockedLearnedPredictorIdentity,
     OfficialTestExecutionKind,
+    PredictionEvaluationFailure,
     PredictionOODKind,
     PreTestFreeze,
     PreTrainingFreeze,
@@ -59,6 +60,7 @@ from fura_mappo.prediction.governance import (
     build_sealed_evaluation_state,
     preflight_layer_a_b5_support,
     record_first_official_test_execution,
+    record_prediction_evaluation_failure,
 )
 from fura_mappo.prediction.history import ObservedDemandHistory
 from fura_mappo.prediction.interfaces import DemandPredictor, validate_forecast_for_context
@@ -142,6 +144,7 @@ __all__ = [
     "PointObjectiveKind",
     "PredictionBootstrapSpec",
     "PredictionContext",
+    "PredictionEvaluationFailure",
     "PredictionModelSelectionFailure",
     "PredictionOODKind",
     "PredictionSample",
@@ -187,6 +190,7 @@ __all__ = [
     "read_dataset_protocol",
     "read_split_manifest",
     "record_first_official_test_execution",
+    "record_prediction_evaluation_failure",
     "select_learned_validation_config",
     "select_validation_baselines",
     "split_manifest_to_dict",

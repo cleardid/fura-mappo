@@ -690,9 +690,7 @@ def test_slice_12_production_source_has_no_scientific_execution_or_payload_acces
 
 
 def test_no_scientific_failure_or_fresh_test_reset_surface() -> None:
-    production_source = inspect.getsource(governance_module)
     forbidden_symbols = (
-        "PredictionEvaluationFailure",
         "reset",
         "unspend",
         "reopen",
@@ -703,18 +701,31 @@ def test_no_scientific_failure_or_fresh_test_reset_surface() -> None:
         "add_pretest_freeze",
         "register_pretest_freeze",
         "register_later",
+        "retry",
+        "rerun",
+        "resume",
+        "recover",
+        "replacement",
+        "fallback",
+        "fresh_test",
     )
 
-    assert "PREDICTION_" + "EVALUATION_FAILURE" not in production_source
+    assert (
+        governance_module.PredictionEvaluationFailure
+        is prediction_module.PredictionEvaluationFailure
+    )
+    assert (
+        governance_module._PREDICTION_EVALUATION_FAILURE_STATUS == "PREDICTION_EVALUATION_FAILURE"
+    )
     assert all(not hasattr(governance_module, name) for name in forbidden_symbols)
     assert all(not hasattr(prediction_module, name) for name in forbidden_symbols)
-    assert tuple(
+    assert {
         node.__name__
         for node in governance_module.__dict__.values()
         if isinstance(node, type)
         and node.__module__ == governance_module.__name__
         and node.__name__.endswith("Failure")
-    ) == ("PreTrainingFreezeFailure",)
+    } == {"PreTrainingFreezeFailure", "PredictionEvaluationFailure"}
 
 
 def test_transition_signature_has_no_result_or_success_dependency() -> None:

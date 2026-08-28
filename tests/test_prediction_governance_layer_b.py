@@ -912,7 +912,23 @@ def test_direct_construction_is_structural_only_and_factory_is_trust_boundary(
 
 
 def test_production_builder_has_no_numeric_test_or_execution_surface() -> None:
-    source = inspect.getsource(governance_module)
+    layer_b_definitions = (
+        LockedBaselineFreezeIdentity,
+        governance_module._locked_learned_predictor_post_init,
+        governance_module._normalize_git_commit_sha,
+        governance_module._locked_baseline_identity,
+        governance_module._locked_learned_predictor_identity,
+        governance_module._learned_predictor_sha256,
+        governance_module._pretest_freeze_identity,
+        PreTestFreeze,
+        governance_module._materialize_pretest_artifacts,
+        governance_module._normalize_baseline_predictor_sha_map,
+        governance_module._layer_a_validation_signature,
+        governance_module._match_selected_learned_identity,
+        governance_module._build_learned_predictor_identities,
+        build_pretest_freeze,
+    )
+    source = "\n".join(inspect.getsource(definition) for definition in layer_b_definitions)
     builder_source = inspect.getsource(build_pretest_freeze)
     forbidden = (
         ".artifact",
@@ -936,6 +952,10 @@ def test_production_builder_has_no_numeric_test_or_execution_surface() -> None:
     )
 
     assert all(token not in source for token in forbidden)
+    assert (
+        LockedLearnedPredictorIdentity.__post_init__
+        is governance_module._locked_learned_predictor_post_init
+    )
     assert "preflight_layer_a_b5_support(" in builder_source
     assert "baseline_selection.selected.baseline" in builder_source
     assert ".primary_rmse" not in builder_source

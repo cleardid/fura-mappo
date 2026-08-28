@@ -31,6 +31,7 @@ _PRE_TEST_FREEZE_SCHEMA = "fura-mappo.prediction-pre-test-freeze"
 _PRE_TEST_FREEZE_VERSION = 1
 _SEALED_EVALUATION_STATE_SCHEMA = "fura-mappo.prediction-sealed-evaluation-state"
 _SEALED_EVALUATION_STATE_VERSION = 1
+_PREDICTION_EVALUATION_FAILURE_STATUS = "PREDICTION_EVALUATION_FAILURE"
 _LOCKED_LEARNED_PREDICTOR_SCHEMA = "fura-mappo.prediction-locked-learned-predictor"
 _LOCKED_LEARNED_PREDICTOR_VERSION = 1
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
@@ -1634,6 +1635,160 @@ def record_first_official_test_execution(
         test_ood_trace_ids=state.test_ood_trace_ids,
         disposition=_EXPOSED_TEST_SET_DISPOSITION,
         first_official_test_execution=first_execution,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class PredictionEvaluationFailure:
+    """Official evaluation failure 的 immutable identity-only audit record。
+
+    直接构造只证明字段的 structural consistency。official recording path 必须使用
+    :func:`record_prediction_evaluation_failure`，因为只有该 factory 会把 failure identities
+    重新绑定到 already-exposed sealed state 与 authoritative :class:`PreTestFreeze`。
+    本对象不保存 numerical result，也不定义 persistent artifact schema。
+    """
+
+    sealed_evaluation_state_sha256: str
+    pretraining_freeze_sha256: str
+    registered_pretest_freeze_sha256s: tuple[str, ...]
+    pretest_freeze_sha256: str
+    evaluation_plan_sha256: str
+    official_failure_state_plan_sha256: str
+    test_id_trace_ids: tuple[str, ...]
+    test_ood_trace_ids: tuple[str, ...]
+    first_official_test_execution: FirstOfficialTestExecution
+    failure_split: SplitLabel
+    failure_action_kind: OfficialTestExecutionKind
+    failure_reason: str
+
+    def __post_init__(self) -> None:
+        """验证 immutable failure identity snapshot 的 structural consistency。"""
+
+        sealed_state_sha256 = _normalize_sha256(
+            self.sealed_evaluation_state_sha256,
+            "sealed_evaluation_state_sha256",
+        )
+        pretraining_freeze_sha256 = _normalize_sha256(
+            self.pretraining_freeze_sha256,
+            "pretraining_freeze_sha256",
+        )
+        registered = _normalize_registered_pretest_freezes(self.registered_pretest_freeze_sha256s)
+        pretest_freeze_sha256 = _normalize_sha256(
+            self.pretest_freeze_sha256,
+            "pretest_freeze_sha256",
+        )
+        evaluation_plan_sha256 = _normalize_sha256(
+            self.evaluation_plan_sha256,
+            "evaluation_plan_sha256",
+        )
+        official_failure_state_plan_sha256 = _normalize_sha256(
+            self.official_failure_state_plan_sha256,
+            "official_failure_state_plan_sha256",
+        )
+        test_id_trace_ids = _normalize_identity_tuple(
+            self.test_id_trace_ids,
+            "test_id_trace_ids",
+        )
+        test_ood_trace_ids = _normalize_identity_tuple(
+            self.test_ood_trace_ids,
+            "test_ood_trace_ids",
+        )
+        if not registered:
+            raise ValueError("registered_pretest_freeze_sha256s 必须非空")
+        if len(registered) != len(set(registered)):
+            raise ValueError("registered PreTestFreeze SHA 不得重复")
+        if pretest_freeze_sha256 not in registered:
+            raise ValueError("pretest_freeze_sha256 必须属于 registered tuple")
+        if not test_id_trace_ids or not test_ood_trace_ids:
+            raise ValueError("TEST_ID 与 TEST_OOD trace identities 必须都非空")
+        if len(test_id_trace_ids) != len(set(test_id_trace_ids)):
+            raise ValueError("TEST_ID trace identities 不得重复")
+        if len(test_ood_trace_ids) != len(set(test_ood_trace_ids)):
+            raise ValueError("TEST_OOD trace identities 不得重复")
+        if set(test_id_trace_ids) & set(test_ood_trace_ids):
+            raise ValueError("TEST_ID 与 TEST_OOD trace identities 不得重叠")
+        if not isinstance(self.first_official_test_execution, FirstOfficialTestExecution):
+            raise TypeError("first_official_test_execution 必须是 FirstOfficialTestExecution")
+        if self.first_official_test_execution.pretest_freeze_sha256 not in registered:
+            raise ValueError("first official execution 必须引用 registered PreTestFreeze")
+        if not isinstance(self.failure_split, SplitLabel):
+            raise TypeError("failure_split 必须是 SplitLabel")
+        if self.failure_split not in {SplitLabel.TEST_ID, SplitLabel.TEST_OOD}:
+            raise ValueError("failure_split 必须是 TEST_ID 或 TEST_OOD")
+        if not isinstance(self.failure_action_kind, OfficialTestExecutionKind):
+            raise TypeError("failure_action_kind 必须是 OfficialTestExecutionKind")
+        if not isinstance(self.failure_reason, str):
+            raise TypeError("failure_reason 必须是字符串")
+        failure_reason = self.failure_reason.strip()
+        if not failure_reason:
+            raise ValueError("failure_reason strip 后必须非空")
+
+        object.__setattr__(self, "sealed_evaluation_state_sha256", sealed_state_sha256)
+        object.__setattr__(self, "pretraining_freeze_sha256", pretraining_freeze_sha256)
+        object.__setattr__(self, "registered_pretest_freeze_sha256s", registered)
+        object.__setattr__(self, "pretest_freeze_sha256", pretest_freeze_sha256)
+        object.__setattr__(self, "evaluation_plan_sha256", evaluation_plan_sha256)
+        object.__setattr__(
+            self,
+            "official_failure_state_plan_sha256",
+            official_failure_state_plan_sha256,
+        )
+        object.__setattr__(self, "test_id_trace_ids", test_id_trace_ids)
+        object.__setattr__(self, "test_ood_trace_ids", test_ood_trace_ids)
+        object.__setattr__(self, "failure_reason", failure_reason)
+
+    @property
+    def status(self) -> str:
+        """返回独立于其他 failure namespaces 的稳定 scientific status。"""
+
+        return _PREDICTION_EVALUATION_FAILURE_STATUS
+
+
+def record_prediction_evaluation_failure(
+    *,
+    state: SealedEvaluationState,
+    pretest_freeze: PreTestFreeze,
+    failure_split: SplitLabel,
+    failure_action_kind: OfficialTestExecutionKind,
+    failure_reason: str,
+) -> PredictionEvaluationFailure:
+    """将 detected failure 绑定到 already-exposed state 与 exact Layer-B freeze。
+
+    本函数只构造 immutable audit record；它不触发 first exposure、不执行 official action，
+    也不改变 sealed state。
+    """
+
+    if not isinstance(state, SealedEvaluationState):
+        raise TypeError("state 必须是 SealedEvaluationState")
+    if not isinstance(pretest_freeze, PreTestFreeze):
+        raise TypeError("pretest_freeze 必须是 PreTestFreeze")
+    if state.disposition is not _EXPOSED_TEST_SET_DISPOSITION:
+        raise ValueError("evaluation failure 只能记录到 already-exposed state")
+    first_execution = state.first_official_test_execution
+    if first_execution is None:
+        raise ValueError("exposed state 必须保留 first official execution")
+    if pretest_freeze.sha256 not in state.registered_pretest_freeze_sha256s:
+        raise ValueError("pretest_freeze 必须属于 state registered Layer-B freezes")
+    if pretest_freeze.pretraining_freeze_sha256 != state.pretraining_freeze_sha256:
+        raise ValueError("pretest_freeze Layer-A SHA 与 sealed state 不一致")
+    if pretest_freeze.test_id_trace_ids != state.test_id_trace_ids:
+        raise ValueError("pretest_freeze TEST_ID identities 与 sealed state 不一致")
+    if pretest_freeze.test_ood_trace_ids != state.test_ood_trace_ids:
+        raise ValueError("pretest_freeze TEST_OOD identities 与 sealed state 不一致")
+
+    return PredictionEvaluationFailure(
+        sealed_evaluation_state_sha256=state.sha256,
+        pretraining_freeze_sha256=state.pretraining_freeze_sha256,
+        registered_pretest_freeze_sha256s=state.registered_pretest_freeze_sha256s,
+        pretest_freeze_sha256=pretest_freeze.sha256,
+        evaluation_plan_sha256=pretest_freeze.evaluation_plan_sha256,
+        official_failure_state_plan_sha256=(pretest_freeze.official_failure_state_plan_sha256),
+        test_id_trace_ids=state.test_id_trace_ids,
+        test_ood_trace_ids=state.test_ood_trace_ids,
+        first_official_test_execution=first_execution,
+        failure_split=failure_split,
+        failure_action_kind=failure_action_kind,
+        failure_reason=failure_reason,
     )
 
 
