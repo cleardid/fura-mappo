@@ -39,6 +39,12 @@ from fura_mappo.prediction.dataset import (
     validate_prediction_source_for_artifact,
     validate_split_manifest_artifacts,
 )
+from fura_mappo.prediction.evaluation import (
+    OfficialPointForecastRecord,
+    OfficialPredictorSplitForecasts,
+    bind_official_baseline_split_forecasts,
+    bind_official_learned_split_forecasts,
+)
 from fura_mappo.prediction.governance import (
     B5SupportPreflightResult,
     CalibrationDisposition,
@@ -136,6 +142,8 @@ __all__ = [
     "LockedTestPointEstimate",
     "MaskedMeanDemandPredictor",
     "ObservedDemandHistory",
+    "OfficialPointForecastRecord",
+    "OfficialPredictorSplitForecasts",
     "OfficialTestExecutionKind",
     "PairedTraceBootstrapResult",
     "PersistenceDemandPredictor",
@@ -167,6 +175,8 @@ __all__ = [
     "VerifiedPredictionArtifact",
     "ZeroDemandPredictor",
     "ZoneSchema",
+    "bind_official_baseline_split_forecasts",
+    "bind_official_learned_split_forecasts",
     "bootstrap_locked_test_delta_rmse",
     "build_split_manifest_from_artifacts",
     "build_pretest_freeze",
