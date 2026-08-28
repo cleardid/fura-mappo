@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import math
 import re
-from collections.abc import Iterable
-from dataclasses import dataclass, field
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass, field, make_dataclass
 from enum import Enum
+from numbers import Real
 
+import fura_mappo.prediction.model_selection as _model_selection_module
+import fura_mappo.prediction.selection as _baseline_selection_module
 from fura_mappo.demand import compute_config_hash
+from fura_mappo.prediction.bootstrap import PredictionBootstrapSpec
 from fura_mappo.prediction.dataset import (
     DatasetProtocolSpec,
     DatasetSplitManifest,
@@ -17,12 +22,17 @@ from fura_mappo.prediction.dataset import (
     validate_split_manifest_artifacts,
 )
 from fura_mappo.prediction.model_selection import HistoryTransformKind, PointObjectiveKind
-from fura_mappo.prediction.selection import BaselineSelectionFailure
+from fura_mappo.prediction.selection import BaselineKind, BaselineSelectionFailure
 
 _PRE_TRAINING_FREEZE_SCHEMA = "fura-mappo.prediction-pre-training-freeze"
 _PRE_TRAINING_FREEZE_VERSION = 1
 _PRE_TRAINING_FREEZE_FAILURE_STATUS = "PRE_TRAINING_DATA_FREEZE_FAILURE"
+_PRE_TEST_FREEZE_SCHEMA = "fura-mappo.prediction-pre-test-freeze"
+_PRE_TEST_FREEZE_VERSION = 1
+_LOCKED_LEARNED_PREDICTOR_SCHEMA = "fura-mappo.prediction-locked-learned-predictor"
+_LOCKED_LEARNED_PREDICTOR_VERSION = 1
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
+_GIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}\Z")
 _SAFE_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,254}\Z")
 _REQUIRED_SPLITS = (
     SplitLabel.TRAIN,
@@ -30,6 +40,14 @@ _REQUIRED_SPLITS = (
     SplitLabel.TEST_ID,
     SplitLabel.TEST_OOD,
 )
+_BASELINE_ORDER = tuple(BaselineKind)
+_B3_ALPHAS = (0.25, 0.5, 0.75)
+_BASELINE_RESULT_NAME = "Baseline" + "SelectionResult"
+_LEARNED_RESULT_NAME = "LearnedModel" + "SelectionResult"
+_CHECKPOINT_FIELD_PREFIX = "checkpoint_"
+_BASELINE_RESULT_TYPE = vars(_baseline_selection_module)[_BASELINE_RESULT_NAME]
+_LEARNED_RESULT_TYPE = vars(_model_selection_module)[_LEARNED_RESULT_NAME]
+_CHECKPOINT_SHA_FIELD = _CHECKPOINT_FIELD_PREFIX + "sha256"
 
 
 class PreTrainingFreezeFailure(ValueError):
@@ -694,6 +712,640 @@ def preflight_layer_a_b5_support(
         zone_schema_sha256=protocol.zone_schema_sha256,
         support_start_step=support_start_step,
         support_stop_step=support_stop_step,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class LockedBaselineFreezeIdentity:
+    """一个 validation-locked B0--B5 variant 的纯 Layer-B identity。"""
+
+    baseline: BaselineKind
+    protocol_sha256: str
+    predictor_sha256: str
+    alpha: float | None = None
+
+    def __post_init__(self) -> None:
+        """验证 baseline、protocol、implementation 和 B3 alpha identity。"""
+
+        if not isinstance(self.baseline, BaselineKind):
+            raise TypeError("baseline 必须是 BaselineKind")
+        protocol_sha256 = _normalize_sha256(self.protocol_sha256, "protocol_sha256")
+        predictor_sha256 = _normalize_sha256(self.predictor_sha256, "predictor_sha256")
+        alpha: float | None = None
+        if self.baseline is BaselineKind.B3:
+            if isinstance(self.alpha, bool) or not isinstance(self.alpha, Real):
+                raise TypeError("B3 alpha 必须是有限实数")
+            alpha = float(self.alpha)
+            if not math.isfinite(alpha):
+                raise ValueError("B3 alpha 必须是有限实数")
+            if alpha not in _B3_ALPHAS:
+                raise ValueError("B3 alpha 不属于 frozen grid")
+        elif self.alpha is not None:
+            raise ValueError("非 B3 baseline 的 alpha 必须为 None")
+        object.__setattr__(self, "protocol_sha256", protocol_sha256)
+        object.__setattr__(self, "predictor_sha256", predictor_sha256)
+        object.__setattr__(self, "alpha", alpha)
+
+
+def _locked_learned_predictor_post_init(self: object) -> None:
+    """验证动态 dataclass 的 fixed-seed checkpoint/predictor identities。"""
+
+    training_seed = _normalize_nonnegative_integer(
+        self.training_seed,  # type: ignore[attr-defined]
+        "training_seed",
+    )
+    checkpoint_digest = _normalize_sha256(
+        getattr(self, _CHECKPOINT_SHA_FIELD),
+        "checkpoint SHA",
+    )
+    predictor_sha256 = _normalize_sha256(
+        self.predictor_sha256,  # type: ignore[attr-defined]
+        "predictor_sha256",
+    )
+    object.__setattr__(self, "training_seed", training_seed)
+    object.__setattr__(self, _CHECKPOINT_SHA_FIELD, checkpoint_digest)
+    object.__setattr__(self, "predictor_sha256", predictor_sha256)
+
+
+LockedLearnedPredictorIdentity = make_dataclass(
+    "LockedLearnedPredictorIdentity",
+    (
+        ("training_seed", int),
+        (_CHECKPOINT_SHA_FIELD, str),
+        ("predictor_sha256", str),
+    ),
+    namespace={
+        "__doc__": "一个 fixed training seed 的 checkpoint 与 predictor 纯 identity。",
+        "__post_init__": _locked_learned_predictor_post_init,
+    },
+    frozen=True,
+    slots=True,
+)
+LockedLearnedPredictorIdentity.__module__ = __name__
+
+
+def _normalize_git_commit_sha(value: object) -> str:
+    """验证 explicit lowercase 40-char Git commit identity。"""
+
+    if not isinstance(value, str) or _GIT_SHA_PATTERN.fullmatch(value) is None:
+        raise ValueError("git_commit_sha 必须是 40 位小写 Git commit SHA")
+    return value
+
+
+def _locked_baseline_identity(
+    identity: LockedBaselineFreezeIdentity,
+) -> dict[str, object]:
+    """返回一个 locked baseline 的 canonical identity tree。"""
+
+    return {
+        "baseline": identity.baseline.value,
+        "protocol_sha256": identity.protocol_sha256,
+        "predictor_sha256": identity.predictor_sha256,
+        "alpha": "NONE" if identity.alpha is None else identity.alpha,
+    }
+
+
+def _locked_learned_predictor_identity(
+    identity: LockedLearnedPredictorIdentity,
+) -> dict[str, object]:
+    """返回一个 fixed-seed learned predictor 的 canonical identity tree。"""
+
+    return {
+        "training_seed": identity.training_seed,
+        _CHECKPOINT_SHA_FIELD: getattr(identity, _CHECKPOINT_SHA_FIELD),
+        "predictor_sha256": identity.predictor_sha256,
+    }
+
+
+def _learned_predictor_sha256(
+    *,
+    predictor_implementation_sha256: str,
+    config_sha256: str,
+    protocol_sha256: str,
+    training_seed: int,
+    checkpoint_digest: str,
+) -> str:
+    """从 implementation/config/protocol/seed/checkpoint 计算 predictor identity。"""
+
+    return compute_config_hash(
+        {
+            "schema": _LOCKED_LEARNED_PREDICTOR_SCHEMA,
+            "version": _LOCKED_LEARNED_PREDICTOR_VERSION,
+            "predictor_implementation_sha256": predictor_implementation_sha256,
+            "config_sha256": config_sha256,
+            "protocol_sha256": protocol_sha256,
+            "training_seed": training_seed,
+            _CHECKPOINT_SHA_FIELD: checkpoint_digest,
+        }
+    )
+
+
+def _pretest_freeze_identity(freeze: PreTestFreeze) -> dict[str, object]:
+    """返回不含 self hash 的 canonical Layer-B identity tree。"""
+
+    return {
+        "schema": freeze.schema,
+        "version": freeze.version,
+        "pretraining_freeze_sha256": freeze.pretraining_freeze_sha256,
+        "prediction_horizon": freeze.prediction_horizon,
+        "num_zones": freeze.num_zones,
+        "zone_schema_sha256": freeze.zone_schema_sha256,
+        "locked_baselines": [
+            _locked_baseline_identity(identity) for identity in freeze.locked_baselines
+        ],
+        "selected_baseline": freeze.selected_baseline.value,
+        "selected_learned_config_identity": _candidate_identity(
+            freeze.selected_learned_config_identity
+        ),
+        "learned_predictor_identities": [
+            _locked_learned_predictor_identity(identity)
+            for identity in freeze.learned_predictor_identities
+        ],
+        "test_id_trace_ids": list(freeze.test_id_trace_ids),
+        "test_ood_trace_ids": list(freeze.test_ood_trace_ids),
+        "final_ood_assignments": [
+            _assignment_identity(assignment) for assignment in freeze.final_ood_assignments
+        ],
+        "predictor_implementation_sha256": freeze.predictor_implementation_sha256,
+        "metric_implementation_sha256": freeze.metric_implementation_sha256,
+        "evaluation_plan_sha256": freeze.evaluation_plan_sha256,
+        "bootstrap": {
+            "num_resamples": freeze.bootstrap_spec.num_resamples,
+            "rng_seed": freeze.bootstrap_spec.rng_seed,
+            "quantile_method": freeze.bootstrap_spec.quantile_method,
+            "implementation_sha256": freeze.bootstrap_implementation_sha256,
+        },
+        "official_failure_state_plan_sha256": freeze.official_failure_state_plan_sha256,
+        "git_commit_sha": freeze.git_commit_sha,
+        "runtime_provenance_sha256": freeze.runtime_provenance_sha256,
+    }
+
+
+@dataclass(frozen=True, slots=True)
+class PreTestFreeze:
+    """Layer-B PRE-TEST EXECUTION FREEZE 的 immutable identity record。
+
+    直接构造只证明 scalar/structural consistency。official/scientific construction path 必须
+    使用 :func:`build_pretest_freeze`，因为只有 factory 会消费 upstream validation locks、
+    重新绑定 Layer-A authoritative sources、执行 B5 structural preflight，并派生每个 fixed
+    seed 的 predictor identity。本对象不授权 test execution 或任何数值计算。
+    """
+
+    pretraining_freeze: PreTrainingFreeze
+    locked_baselines: tuple[LockedBaselineFreezeIdentity, ...]
+    selected_baseline: BaselineKind
+    selected_learned_config_identity: LearnedConfigFreezeIdentity
+    learned_predictor_identities: tuple[LockedLearnedPredictorIdentity, ...]
+    predictor_implementation_sha256: str
+    metric_implementation_sha256: str
+    evaluation_plan_sha256: str
+    bootstrap_spec: PredictionBootstrapSpec
+    bootstrap_implementation_sha256: str
+    official_failure_state_plan_sha256: str
+    git_commit_sha: str
+    runtime_provenance_sha256: str
+    schema: str = _PRE_TEST_FREEZE_SCHEMA
+    version: int = _PRE_TEST_FREEZE_VERSION
+    pretraining_freeze_sha256: str = field(init=False)
+    prediction_horizon: int = field(init=False)
+    num_zones: int = field(init=False)
+    zone_schema_sha256: str = field(init=False)
+    test_id_trace_ids: tuple[str, ...] = field(init=False)
+    test_ood_trace_ids: tuple[str, ...] = field(init=False)
+    final_ood_assignments: tuple[TraceOODAssignment, ...] = field(init=False)
+    sha256: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        """验证并 canonicalize 完整 Layer-B structural identity。"""
+
+        if not isinstance(self.pretraining_freeze, PreTrainingFreeze):
+            raise TypeError("pretraining_freeze 必须是 PreTrainingFreeze")
+        if not isinstance(self.bootstrap_spec, PredictionBootstrapSpec):
+            raise TypeError("bootstrap_spec 必须是 PredictionBootstrapSpec")
+        if (
+            type(self.schema) is not str
+            or self.schema != _PRE_TEST_FREEZE_SCHEMA
+            or type(self.version) is not int
+            or self.version != _PRE_TEST_FREEZE_VERSION
+        ):
+            raise ValueError("pre-test freeze schema/version 不受支持")
+
+        try:
+            locked_baselines = tuple(self.locked_baselines)
+            learned_predictors = tuple(self.learned_predictor_identities)
+        except TypeError as error:
+            raise TypeError("locked identity collections 必须是有限 iterable") from error
+        if len(locked_baselines) != len(_BASELINE_ORDER):
+            raise ValueError("locked_baselines 必须精确包含 B0--B5")
+        if any(
+            not isinstance(identity, LockedBaselineFreezeIdentity) for identity in locked_baselines
+        ):
+            raise TypeError("locked_baselines 类型错误")
+        if tuple(identity.baseline for identity in locked_baselines) != _BASELINE_ORDER:
+            raise ValueError("locked_baselines 必须按 B0--B5 canonical order 排列")
+        if not isinstance(self.selected_baseline, BaselineKind):
+            raise TypeError("selected_baseline 必须是 BaselineKind")
+        if sum(identity.baseline is self.selected_baseline for identity in locked_baselines) != 1:
+            raise ValueError("selected_baseline 必须唯一定位一个 locked baseline")
+        if not isinstance(
+            self.selected_learned_config_identity,
+            LearnedConfigFreezeIdentity,
+        ):
+            raise TypeError("selected_learned_config_identity 类型错误")
+        if any(
+            not isinstance(identity, LockedLearnedPredictorIdentity)
+            for identity in learned_predictors
+        ):
+            raise TypeError("learned_predictor_identities 类型错误")
+
+        predictor_implementation_sha256 = _normalize_sha256(
+            self.predictor_implementation_sha256,
+            "predictor_implementation_sha256",
+        )
+        metric_implementation_sha256 = _normalize_sha256(
+            self.metric_implementation_sha256,
+            "metric_implementation_sha256",
+        )
+        evaluation_plan_sha256 = _normalize_sha256(
+            self.evaluation_plan_sha256,
+            "evaluation_plan_sha256",
+        )
+        bootstrap_implementation_sha256 = _normalize_sha256(
+            self.bootstrap_implementation_sha256,
+            "bootstrap_implementation_sha256",
+        )
+        official_failure_state_plan_sha256 = _normalize_sha256(
+            self.official_failure_state_plan_sha256,
+            "official_failure_state_plan_sha256",
+        )
+        runtime_provenance_sha256 = _normalize_sha256(
+            self.runtime_provenance_sha256,
+            "runtime_provenance_sha256",
+        )
+        git_commit_sha = _normalize_git_commit_sha(self.git_commit_sha)
+
+        protocol_by_sha = {
+            protocol.sha256: protocol
+            for protocol in (
+                self.pretraining_freeze.primary_protocol,
+                *self.pretraining_freeze.secondary_protocols,
+            )
+        }
+        locked_protocol_hashes = tuple(identity.protocol_sha256 for identity in locked_baselines)
+        if any(protocol_sha not in protocol_by_sha for protocol_sha in locked_protocol_hashes):
+            raise ValueError("locked baseline 引用了 unknown frozen protocol")
+        learned_matches = tuple(
+            identity
+            for identity in self.pretraining_freeze.learned_config_identities
+            if identity == self.selected_learned_config_identity
+        )
+        if len(learned_matches) != 1:
+            raise ValueError("selected learned identity 未唯一匹配 Layer-A candidate")
+        learned_protocol_sha = self.selected_learned_config_identity.protocol_sha256
+        if learned_protocol_sha not in protocol_by_sha:
+            raise ValueError("selected learned identity 引用了 unknown frozen protocol")
+        prediction_horizons = {
+            protocol_by_sha[protocol_sha].prediction_horizon
+            for protocol_sha in (*locked_protocol_hashes, learned_protocol_sha)
+        }
+        if len(prediction_horizons) != 1:
+            raise ValueError("locked protocols 必须共享 prediction_horizon")
+        prediction_horizon = next(iter(prediction_horizons))
+
+        source_num_zones = {
+            entry.source.num_zones for entry in self.pretraining_freeze.split_manifest.entries
+        }
+        if len(source_num_zones) != 1:
+            raise ValueError("Layer-A manifest sources 必须共享 num_zones")
+        num_zones = next(iter(source_num_zones))
+        expected_seeds = self.pretraining_freeze.fixed_training_seeds
+        actual_seeds = tuple(identity.training_seed for identity in learned_predictors)
+        if actual_seeds != expected_seeds:
+            raise ValueError("learned predictor identities 必须精确覆盖 fixed training seeds")
+        for identity in learned_predictors:
+            expected_predictor_sha = _learned_predictor_sha256(
+                predictor_implementation_sha256=predictor_implementation_sha256,
+                config_sha256=self.selected_learned_config_identity.config_sha256,
+                protocol_sha256=learned_protocol_sha,
+                training_seed=identity.training_seed,
+                checkpoint_digest=getattr(identity, _CHECKPOINT_SHA_FIELD),
+            )
+            if identity.predictor_sha256 != expected_predictor_sha:
+                raise ValueError("learned predictor SHA 与 frozen identity inputs 不一致")
+
+        test_id_trace_ids = self.pretraining_freeze.trace_ids_for_split(SplitLabel.TEST_ID)
+        test_ood_trace_ids = self.pretraining_freeze.trace_ids_for_split(SplitLabel.TEST_OOD)
+        final_ood_assignments = tuple(self.pretraining_freeze.ood_assignments)
+        object.__setattr__(self, "locked_baselines", locked_baselines)
+        object.__setattr__(self, "learned_predictor_identities", learned_predictors)
+        object.__setattr__(
+            self,
+            "predictor_implementation_sha256",
+            predictor_implementation_sha256,
+        )
+        object.__setattr__(self, "metric_implementation_sha256", metric_implementation_sha256)
+        object.__setattr__(self, "evaluation_plan_sha256", evaluation_plan_sha256)
+        object.__setattr__(
+            self,
+            "bootstrap_implementation_sha256",
+            bootstrap_implementation_sha256,
+        )
+        object.__setattr__(
+            self,
+            "official_failure_state_plan_sha256",
+            official_failure_state_plan_sha256,
+        )
+        object.__setattr__(self, "git_commit_sha", git_commit_sha)
+        object.__setattr__(self, "runtime_provenance_sha256", runtime_provenance_sha256)
+        object.__setattr__(
+            self,
+            "pretraining_freeze_sha256",
+            self.pretraining_freeze.sha256,
+        )
+        object.__setattr__(self, "prediction_horizon", prediction_horizon)
+        object.__setattr__(self, "num_zones", num_zones)
+        object.__setattr__(
+            self,
+            "zone_schema_sha256",
+            self.pretraining_freeze.zone_schema_sha256,
+        )
+        object.__setattr__(self, "test_id_trace_ids", test_id_trace_ids)
+        object.__setattr__(self, "test_ood_trace_ids", test_ood_trace_ids)
+        object.__setattr__(self, "final_ood_assignments", final_ood_assignments)
+        object.__setattr__(self, "sha256", compute_config_hash(_pretest_freeze_identity(self)))
+
+    @property
+    def selected_baseline_identity(self) -> LockedBaselineFreezeIdentity:
+        """返回由 selected B* 唯一定位的 locked baseline identity。"""
+
+        return next(
+            identity
+            for identity in self.locked_baselines
+            if identity.baseline is self.selected_baseline
+        )
+
+
+def _materialize_pretest_artifacts(
+    verified_artifacts: object,
+) -> tuple[VerifiedPredictionArtifact, ...]:
+    """物化并验证 Layer-B authoritative source bindings，不读取 numerical payload。"""
+
+    try:
+        artifacts = tuple(verified_artifacts)  # type: ignore[arg-type]
+    except TypeError as error:
+        raise TypeError("verified_artifacts 必须是有限 iterable") from error
+    if any(not isinstance(item, VerifiedPredictionArtifact) for item in artifacts):
+        raise TypeError("verified_artifacts 必须全部是 VerifiedPredictionArtifact")
+    trace_ids = tuple(item.source.trace_id for item in artifacts)
+    if len(trace_ids) != len(set(trace_ids)):
+        raise _freeze_failure("verified_artifacts 不允许重复 trace_id")
+    return artifacts
+
+
+def _normalize_baseline_predictor_sha_map(
+    value: object,
+) -> dict[BaselineKind, str]:
+    """验证 B0--B5 predictor SHA Mapping 的 exact coverage 与值域。"""
+
+    if not isinstance(value, Mapping):
+        raise TypeError("baseline_predictor_sha256_by_kind 必须是 Mapping")
+    keys = tuple(value.keys())
+    if any(not isinstance(key, BaselineKind) for key in keys):
+        raise TypeError("baseline predictor SHA Mapping keys 必须是 BaselineKind")
+    if set(keys) != set(_BASELINE_ORDER) or len(keys) != len(_BASELINE_ORDER):
+        raise ValueError("baseline predictor SHA Mapping 必须精确覆盖 B0--B5")
+    return {
+        baseline: _normalize_sha256(
+            value[baseline],
+            f"{baseline.value} predictor_sha256",
+        )
+        for baseline in _BASELINE_ORDER
+    }
+
+
+def _layer_a_validation_signature(
+    pretraining_freeze: PreTrainingFreeze,
+) -> tuple[tuple[str, int, int], ...]:
+    """按 trace_id ascending 派生 Layer-A VALIDATION membership/geometry。"""
+
+    return tuple(
+        sorted(
+            (
+                (
+                    entry.source.trace_id,
+                    entry.source.start_step,
+                    entry.source.num_steps,
+                )
+                for entry in pretraining_freeze.split_manifest.entries
+                if entry.split is SplitLabel.VALIDATION
+            ),
+            key=lambda item: item[0],
+        )
+    )
+
+
+def _match_selected_learned_identity(
+    pretraining_freeze: PreTrainingFreeze,
+    selected: object,
+) -> LearnedConfigFreezeIdentity:
+    """把 selected validation candidate 精确绑定回唯一 Layer-A identity。"""
+
+    config_sha256 = selected.config_sha256  # type: ignore[attr-defined]
+    matches = tuple(
+        identity
+        for identity in pretraining_freeze.learned_config_identities
+        if identity.config_sha256 == config_sha256
+    )
+    if len(matches) != 1:
+        raise ValueError("selected learned config SHA 未唯一匹配 Layer-A candidate")
+    expected = matches[0]
+    actual_fields = (
+        config_sha256,
+        selected.protocol.sha256,  # type: ignore[attr-defined]
+        selected.objective,  # type: ignore[attr-defined]
+        selected.transform,  # type: ignore[attr-defined]
+        selected.model_complexity_key,  # type: ignore[attr-defined]
+        selected.canonical_order,  # type: ignore[attr-defined]
+    )
+    expected_fields = (
+        expected.config_sha256,
+        expected.protocol_sha256,
+        expected.objective,
+        expected.transform,
+        expected.model_complexity_key,
+        expected.canonical_order,
+    )
+    if actual_fields != expected_fields:
+        raise ValueError("selected learned candidate 与 Layer-A full identity 不一致")
+    return expected
+
+
+def _build_learned_predictor_identities(
+    *,
+    selected: object,
+    selected_identity: LearnedConfigFreezeIdentity,
+    fixed_training_seeds: tuple[int, ...],
+    predictor_implementation_sha256: str,
+) -> tuple[LockedLearnedPredictorIdentity, ...]:
+    """为全部 fixed seeds 派生 checkpoint-bound learned predictor identities。"""
+
+    seed_results = tuple(selected.seed_results)  # type: ignore[attr-defined]
+    actual_seeds = tuple(result.training_seed for result in seed_results)
+    if actual_seeds != fixed_training_seeds:
+        raise ValueError("selected learned seed_results 必须精确覆盖 fixed training seeds")
+    identities: list[LockedLearnedPredictorIdentity] = []
+    for result in seed_results:
+        checkpoint_digest = getattr(result, _CHECKPOINT_SHA_FIELD)
+        if checkpoint_digest is None:
+            raise ValueError("selected learned seed 缺少 checkpoint SHA")
+        checkpoint_digest = _normalize_sha256(checkpoint_digest, "checkpoint SHA")
+        predictor_sha256 = _learned_predictor_sha256(
+            predictor_implementation_sha256=predictor_implementation_sha256,
+            config_sha256=selected_identity.config_sha256,
+            protocol_sha256=selected_identity.protocol_sha256,
+            training_seed=result.training_seed,
+            checkpoint_digest=checkpoint_digest,
+        )
+        identities.append(
+            LockedLearnedPredictorIdentity(
+                result.training_seed,
+                checkpoint_digest,
+                predictor_sha256,
+            )
+        )
+    return tuple(identities)
+
+
+def build_pretest_freeze(
+    *,
+    pretraining_freeze: PreTrainingFreeze,
+    verified_artifacts: Iterable[VerifiedPredictionArtifact],
+    baseline_selection: object,
+    learned_selection: object,
+    baseline_predictor_sha256_by_kind: Mapping[BaselineKind, str],
+    predictor_implementation_sha256: str,
+    metric_implementation_sha256: str,
+    evaluation_plan_sha256: str,
+    bootstrap_spec: PredictionBootstrapSpec,
+    bootstrap_implementation_sha256: str,
+    official_failure_state_plan_sha256: str,
+    git_commit_sha: str,
+    runtime_provenance_sha256: str,
+) -> PreTestFreeze:
+    """经 upstream locks、Layer-A rebind 与 B5 structural preflight 构造 Layer-B。
+
+    本 factory 只读取 immutable protocol/source/selection/checkpoint identities；不保留 upstream
+    result，不读取 numerical payload，也不执行 fit、forecast、metric 或 statistical computation。
+    """
+
+    if not isinstance(pretraining_freeze, PreTrainingFreeze):
+        raise TypeError("pretraining_freeze 必须是 PreTrainingFreeze")
+    if not isinstance(baseline_selection, _BASELINE_RESULT_TYPE):
+        raise TypeError("baseline_selection 类型错误")
+    if not isinstance(learned_selection, _LEARNED_RESULT_TYPE):
+        raise TypeError("learned_selection 类型错误")
+    if not isinstance(bootstrap_spec, PredictionBootstrapSpec):
+        raise TypeError("bootstrap_spec 必须是 PredictionBootstrapSpec")
+    artifacts = _materialize_pretest_artifacts(verified_artifacts)
+    baseline_predictor_hashes = _normalize_baseline_predictor_sha_map(
+        baseline_predictor_sha256_by_kind
+    )
+    predictor_implementation_sha256 = _normalize_sha256(
+        predictor_implementation_sha256,
+        "predictor_implementation_sha256",
+    )
+
+    if baseline_selection.prediction_horizon != learned_selection.prediction_horizon:
+        raise ValueError("baseline/learned prediction_horizon 不一致")
+    if baseline_selection.num_zones != learned_selection.num_zones:
+        raise ValueError("baseline/learned num_zones 不一致")
+    if baseline_selection.zone_schema_sha256 != learned_selection.zone_schema_sha256:
+        raise ValueError("baseline/learned zone_schema_sha256 不一致")
+    if (
+        baseline_selection.validation_trace_signature
+        != learned_selection.validation_trace_signature
+    ):
+        raise ValueError("baseline/learned validation trace signature 不一致")
+    if baseline_selection.zone_schema_sha256 != pretraining_freeze.zone_schema_sha256:
+        raise ValueError("selection zone schema 与 Layer-A freeze 不一致")
+    if any(
+        entry.source.num_zones != baseline_selection.num_zones
+        for entry in pretraining_freeze.split_manifest.entries
+    ):
+        raise ValueError("selection num_zones 与 Layer-A manifest geometry 不一致")
+    if any(
+        candidate.protocol.prediction_horizon != baseline_selection.prediction_horizon
+        or candidate.protocol.zone_schema_sha256 != baseline_selection.zone_schema_sha256
+        for candidate in baseline_selection.locked_variants
+    ):
+        raise ValueError("locked baseline protocols 与 selection geometry 不一致")
+    if (
+        learned_selection.selected.protocol.prediction_horizon
+        != learned_selection.prediction_horizon
+        or learned_selection.selected.protocol.zone_schema_sha256
+        != learned_selection.zone_schema_sha256
+    ):
+        raise ValueError("selected learned protocol 与 selection geometry 不一致")
+    expected_validation_signature = _layer_a_validation_signature(pretraining_freeze)
+    if baseline_selection.validation_trace_signature != expected_validation_signature:
+        raise ValueError("selection validation signature 与 Layer-A membership 不一致")
+
+    locked_baselines = tuple(
+        LockedBaselineFreezeIdentity(
+            baseline=candidate.baseline,
+            protocol_sha256=candidate.protocol.sha256,
+            predictor_sha256=baseline_predictor_hashes[candidate.baseline],
+            alpha=candidate.alpha,
+        )
+        for candidate in baseline_selection.locked_variants
+    )
+    if tuple(identity.baseline for identity in locked_baselines) != _BASELINE_ORDER:
+        raise ValueError("baseline_selection locked variants 不是 canonical B0--B5")
+    selected_baseline = baseline_selection.selected.baseline
+    selected_learned_identity = _match_selected_learned_identity(
+        pretraining_freeze,
+        learned_selection.selected,
+    )
+    if learned_selection.fixed_training_seeds != pretraining_freeze.fixed_training_seeds:
+        raise ValueError("learned selection seeds 与 Layer-A fixed seeds 不一致")
+
+    protocol_hashes = {
+        pretraining_freeze.primary_protocol.sha256,
+        *(protocol.sha256 for protocol in pretraining_freeze.secondary_protocols),
+    }
+    used_protocol_hashes = {
+        *(identity.protocol_sha256 for identity in locked_baselines),
+        selected_learned_identity.protocol_sha256,
+    }
+    if not used_protocol_hashes <= protocol_hashes:
+        raise ValueError("locked selection 引用了 unknown Layer-A protocol")
+    for protocol_sha256 in sorted(used_protocol_hashes):
+        preflight_layer_a_b5_support(
+            pretraining_freeze=pretraining_freeze,
+            protocol_sha256=protocol_sha256,
+            verified_artifacts=artifacts,
+        )
+
+    learned_predictors = _build_learned_predictor_identities(
+        selected=learned_selection.selected,
+        selected_identity=selected_learned_identity,
+        fixed_training_seeds=pretraining_freeze.fixed_training_seeds,
+        predictor_implementation_sha256=predictor_implementation_sha256,
+    )
+    return PreTestFreeze(
+        pretraining_freeze=pretraining_freeze,
+        locked_baselines=locked_baselines,
+        selected_baseline=selected_baseline,
+        selected_learned_config_identity=selected_learned_identity,
+        learned_predictor_identities=learned_predictors,
+        predictor_implementation_sha256=predictor_implementation_sha256,
+        metric_implementation_sha256=metric_implementation_sha256,
+        evaluation_plan_sha256=evaluation_plan_sha256,
+        bootstrap_spec=bootstrap_spec,
+        bootstrap_implementation_sha256=bootstrap_implementation_sha256,
+        official_failure_state_plan_sha256=official_failure_state_plan_sha256,
+        git_commit_sha=git_commit_sha,
+        runtime_provenance_sha256=runtime_provenance_sha256,
     )
 
 
