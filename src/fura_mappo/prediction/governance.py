@@ -17,6 +17,7 @@ from fura_mappo.prediction.dataset import (
     validate_split_manifest_artifacts,
 )
 from fura_mappo.prediction.model_selection import HistoryTransformKind, PointObjectiveKind
+from fura_mappo.prediction.selection import BaselineSelectionFailure
 
 _PRE_TRAINING_FREEZE_SCHEMA = "fura-mappo.prediction-pre-training-freeze"
 _PRE_TRAINING_FREEZE_VERSION = 1
@@ -485,6 +486,214 @@ def build_pretraining_freeze(
         rng_namespace_plan_sha256=rng_namespace_plan_sha256,
         training_plan_sha256=training_plan_sha256,
         baseline_plan_sha256=baseline_plan_sha256,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class B5SupportPreflightResult:
+    """B5 Layer-A structural support result，不含 artifact、data、fit 或 metric。
+
+    直接构造只证明 scalar structural consistency；scientific path 必须通过
+    :func:`preflight_layer_a_b5_support` 完成 authoritative artifact rebind。
+    """
+
+    pretraining_freeze_sha256: str
+    protocol_sha256: str
+    prediction_horizon: int
+    zone_schema_sha256: str
+    support_start_step: int
+    support_stop_step: int
+
+    def __post_init__(self) -> None:
+        """验证 immutable structural result 的标量身份和半开区间。"""
+
+        pretraining_freeze_sha256 = _normalize_sha256(
+            self.pretraining_freeze_sha256,
+            "pretraining_freeze_sha256",
+        )
+        protocol_sha256 = _normalize_sha256(self.protocol_sha256, "protocol_sha256")
+        zone_schema_sha256 = _normalize_sha256(
+            self.zone_schema_sha256,
+            "zone_schema_sha256",
+        )
+        prediction_horizon = _normalize_nonnegative_integer(
+            self.prediction_horizon,
+            "prediction_horizon",
+        )
+        if prediction_horizon < 1:
+            raise ValueError("prediction_horizon 必须大于或等于 1")
+        support_start_step = _normalize_nonnegative_integer(
+            self.support_start_step,
+            "support_start_step",
+        )
+        support_stop_step = _normalize_nonnegative_integer(
+            self.support_stop_step,
+            "support_stop_step",
+        )
+        if support_start_step >= support_stop_step:
+            raise ValueError("support interval 必须是非空半开区间")
+
+        object.__setattr__(
+            self,
+            "pretraining_freeze_sha256",
+            pretraining_freeze_sha256,
+        )
+        object.__setattr__(self, "protocol_sha256", protocol_sha256)
+        object.__setattr__(self, "prediction_horizon", prediction_horizon)
+        object.__setattr__(self, "zone_schema_sha256", zone_schema_sha256)
+        object.__setattr__(self, "support_start_step", support_start_step)
+        object.__setattr__(self, "support_stop_step", support_stop_step)
+
+    @property
+    def support_length(self) -> int:
+        """返回 train-fitted common absolute-step support length。"""
+
+        return self.support_stop_step - self.support_start_step
+
+
+def _resolve_frozen_protocol(
+    pretraining_freeze: PreTrainingFreeze,
+    protocol_sha256: object,
+) -> DatasetProtocolSpec:
+    """按 SHA 从 frozen primary/secondary protocols 唯一解析一个 protocol。"""
+
+    try:
+        normalized_sha256 = _normalize_sha256(protocol_sha256, "protocol_sha256")
+    except ValueError as error:
+        raise _freeze_failure(str(error)) from error
+    protocols = (
+        pretraining_freeze.primary_protocol,
+        *pretraining_freeze.secondary_protocols,
+    )
+    matches = tuple(protocol for protocol in protocols if protocol.sha256 == normalized_sha256)
+    if len(matches) != 1:
+        raise _freeze_failure(
+            f"protocol_sha256 未唯一匹配 frozen dataset protocol: {normalized_sha256}"
+        )
+    return matches[0]
+
+
+def _validate_preflight_artifacts(
+    pretraining_freeze: PreTrainingFreeze,
+    protocol: DatasetProtocolSpec,
+    verified_artifacts: object,
+) -> None:
+    """复用 WP-03A validator 重建 exact authoritative source binding。"""
+
+    try:
+        artifacts = tuple(verified_artifacts)  # type: ignore[arg-type]
+    except TypeError as error:
+        raise TypeError("verified_artifacts 必须是有限 iterable") from error
+    if any(not isinstance(artifact, VerifiedPredictionArtifact) for artifact in artifacts):
+        raise TypeError("verified_artifacts 必须全部是 VerifiedPredictionArtifact")
+    artifacts_by_trace_id: dict[str, VerifiedPredictionArtifact] = {}
+    for artifact in artifacts:
+        trace_id = artifact.source.trace_id
+        if trace_id in artifacts_by_trace_id:
+            raise _freeze_failure("verified_artifacts 不允许重复 trace_id")
+        artifacts_by_trace_id[trace_id] = artifact
+    try:
+        validate_split_manifest_artifacts(
+            pretraining_freeze.split_manifest,
+            protocol,
+            artifacts_by_trace_id,
+        )
+    except (TypeError, ValueError, KeyError) as error:
+        raise _freeze_failure(f"authoritative manifest/artifact binding 失败: {error}") from error
+
+
+def _b5_support_failure(
+    *,
+    protocol_sha256: str,
+    split: SplitLabel,
+    trace_id: str,
+    support_start_step: int,
+    support_stop_step: int,
+    required_start_step: int | None = None,
+    required_stop_step: int | None = None,
+) -> BaselineSelectionFailure:
+    """构造可定位 protocol/split/trace/support 的 B5 structural hard failure。"""
+
+    message = (
+        "B5 structural support preflight failed: "
+        f"protocol_sha256={protocol_sha256}, split={split.value}, trace_id={trace_id}, "
+        f"support=[{support_start_step},{support_stop_step})"
+    )
+    if required_start_step is not None and required_stop_step is not None:
+        message += f", required=[{required_start_step},{required_stop_step})"
+    return BaselineSelectionFailure(message)
+
+
+def preflight_layer_a_b5_support(
+    *,
+    pretraining_freeze: PreTrainingFreeze,
+    protocol_sha256: str,
+    verified_artifacts: Iterable[VerifiedPredictionArtifact],
+) -> B5SupportPreflightResult:
+    """验证 frozen B5 train common support，不读取 raw data 或执行 numerical fit。"""
+
+    if not isinstance(pretraining_freeze, PreTrainingFreeze):
+        raise TypeError("pretraining_freeze 必须是 PreTrainingFreeze")
+    protocol = _resolve_frozen_protocol(pretraining_freeze, protocol_sha256)
+    _validate_preflight_artifacts(
+        pretraining_freeze,
+        protocol,
+        verified_artifacts,
+    )
+
+    train_sources = tuple(
+        entry.source
+        for entry in pretraining_freeze.split_manifest.entries
+        if entry.split is SplitLabel.TRAIN
+    )
+    if not train_sources:
+        raise _freeze_failure("pretraining freeze 缺少 TRAIN source")
+    support_start_step = max(source.start_step for source in train_sources)
+    support_stop_step = min(source.start_step + source.num_steps for source in train_sources)
+    if support_start_step >= support_stop_step:
+        first_train = train_sources[0]
+        raise _b5_support_failure(
+            protocol_sha256=protocol.sha256,
+            split=SplitLabel.TRAIN,
+            trace_id=first_train.trace_id,
+            support_start_step=support_start_step,
+            support_stop_step=support_stop_step,
+        )
+
+    preflight_splits = {
+        SplitLabel.TRAIN,
+        SplitLabel.VALIDATION,
+        SplitLabel.TEST_ID,
+        SplitLabel.TEST_OOD,
+    }
+    for entry in pretraining_freeze.split_manifest.entries:
+        if entry.split not in preflight_splits:
+            continue
+        source = entry.source
+        required_start_step = source.start_step + 1
+        required_stop_step = source.start_step + source.num_steps
+        if required_start_step == required_stop_step:
+            continue
+        if not (
+            support_start_step <= required_start_step and required_stop_step <= support_stop_step
+        ):
+            raise _b5_support_failure(
+                protocol_sha256=protocol.sha256,
+                split=entry.split,
+                trace_id=source.trace_id,
+                support_start_step=support_start_step,
+                support_stop_step=support_stop_step,
+                required_start_step=required_start_step,
+                required_stop_step=required_stop_step,
+            )
+
+    return B5SupportPreflightResult(
+        pretraining_freeze_sha256=pretraining_freeze.sha256,
+        protocol_sha256=protocol.sha256,
+        prediction_horizon=protocol.prediction_horizon,
+        zone_schema_sha256=protocol.zone_schema_sha256,
+        support_start_step=support_start_step,
+        support_stop_step=support_stop_step,
     )
 
 

@@ -40,6 +40,7 @@ from fura_mappo.prediction.dataset import (
     validate_split_manifest_artifacts,
 )
 from fura_mappo.prediction.governance import (
+    B5SupportPreflightResult,
     CalibrationDisposition,
     LearnedConfigFreezeIdentity,
     PredictionOODKind,
@@ -47,6 +48,7 @@ from fura_mappo.prediction.governance import (
     PreTrainingFreezeFailure,
     TraceOODAssignment,
     build_pretraining_freeze,
+    preflight_layer_a_b5_support,
 )
 from fura_mappo.prediction.history import ObservedDemandHistory
 from fura_mappo.prediction.interfaces import DemandPredictor, validate_forecast_for_context
@@ -102,6 +104,7 @@ __all__ = [
     "BaselineSelectionFailure",
     "BaselineSelectionResult",
     "BaselineValidationCandidate",
+    "B5SupportPreflightResult",
     "CalibrationDisposition",
     "DatasetProtocolSpec",
     "DatasetSplitManifest",
@@ -161,6 +164,7 @@ __all__ = [
     "fit_static_train_climatology",
     "interpret_primary_id_bootstrap",
     "load_verified_prediction_artifact",
+    "preflight_layer_a_b5_support",
     "read_dataset_protocol",
     "read_split_manifest",
     "select_learned_validation_config",
