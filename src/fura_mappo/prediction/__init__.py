@@ -41,6 +41,11 @@ from fura_mappo.prediction.dataset import (
 )
 from fura_mappo.prediction.history import ObservedDemandHistory
 from fura_mappo.prediction.interfaces import DemandPredictor, validate_forecast_for_context
+from fura_mappo.prediction.interpretation import (
+    PrimaryIDInterpretation,
+    PrimaryIDLabel,
+    interpret_primary_id_bootstrap,
+)
 from fura_mappo.prediction.metrics import (
     PointForecastRecord,
     PointMetricSummary,
@@ -113,6 +118,8 @@ __all__ = [
     "PredictionSample",
     "PredictionSource",
     "PredictionTarget",
+    "PrimaryIDInterpretation",
+    "PrimaryIDLabel",
     "SplitEntry",
     "SplitLabel",
     "StaticClimatologyDemandPredictor",
@@ -136,6 +143,7 @@ __all__ = [
     "evaluate_point_forecasts",
     "fit_absolute_step_train_climatology",
     "fit_static_train_climatology",
+    "interpret_primary_id_bootstrap",
     "load_verified_prediction_artifact",
     "read_dataset_protocol",
     "read_split_manifest",
