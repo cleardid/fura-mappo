@@ -100,6 +100,11 @@ from fura_mappo.prediction.models import (
     PredictionTarget,
     ZoneSchema,
 )
+from fura_mappo.prediction.official_metrics import (
+    OfficialPredictorSplitMetrics,
+    OfficialSealedPointMetrics,
+    evaluate_official_sealed_point_metrics,
+)
 from fura_mappo.prediction.selection import (
     BaselineKind,
     BaselineSelectionFailure,
@@ -144,6 +149,8 @@ __all__ = [
     "ObservedDemandHistory",
     "OfficialPointForecastRecord",
     "OfficialPredictorSplitForecasts",
+    "OfficialPredictorSplitMetrics",
+    "OfficialSealedPointMetrics",
     "OfficialTestExecutionKind",
     "PairedTraceBootstrapResult",
     "PersistenceDemandPredictor",
@@ -192,6 +199,7 @@ __all__ = [
     "derive_synthetic_prediction_samples",
     "derive_prediction_target",
     "evaluate_point_forecasts",
+    "evaluate_official_sealed_point_metrics",
     "fit_absolute_step_train_climatology",
     "fit_static_train_climatology",
     "interpret_primary_id_bootstrap",
