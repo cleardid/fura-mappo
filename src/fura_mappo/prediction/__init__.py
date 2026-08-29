@@ -115,6 +115,10 @@ from fura_mappo.prediction.official_metrics import (
     OfficialSealedPointMetrics,
     evaluate_official_sealed_point_metrics,
 )
+from fura_mappo.prediction.official_outcome import (
+    OfficialPredictionEvaluationResult,
+    finalize_official_prediction_evaluation,
+)
 from fura_mappo.prediction.selection import (
     BaselineKind,
     BaselineSelectionFailure,
@@ -161,6 +165,7 @@ __all__ = [
     "OODCellTraceBreakdown",
     "OODKindTraceBreakdown",
     "OfficialPointForecastRecord",
+    "OfficialPredictionEvaluationResult",
     "OfficialPredictorSplitForecasts",
     "OfficialPredictorSplitBreakdown",
     "OfficialPredictorSplitMetrics",
@@ -220,6 +225,7 @@ __all__ = [
     "evaluate_official_sealed_point_metrics",
     "fit_absolute_step_train_climatology",
     "fit_static_train_climatology",
+    "finalize_official_prediction_evaluation",
     "interpret_primary_id_bootstrap",
     "load_verified_prediction_artifact",
     "preflight_layer_a_b5_support",

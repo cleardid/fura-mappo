@@ -539,6 +539,32 @@ Failure record 与 spent-test identities 必须保留。Spent traces 仅可作�
 result。若旧 test numerical outcome 用于调整 model/protocol，该 set 永久不能再产生 confirmatory
 scientific result。
 
+### Final official evaluation construction
+
+成功的 official WP-03B result 只能由同一个 top-level orchestration invocation 从 authoritative raw
+inputs 连续构造：already-SPENT `SealedEvaluationState` 与 exact registered `PreTestFreeze` admission，
+raw safe-loaded `VerifiedPredictionArtifact` 与 raw locked `ForecastRecord` inventories，Slice 14 official
+forecast binding，Slice 15 sealed point metrics，Slice 16 mandatory descriptive breakdowns，Primary TEST_ID
+locked point estimate，使用 exact Layer-B frozen bootstrap spec 的 paired whole-trace bootstrap，最后执行
+Primary-ID interpretation。Caller-supplied `OfficialPredictorSplitForecasts`、
+`OfficialSealedPointMetrics`、`OfficialSealedMandatoryBreakdowns`、`LockedTestPointEstimate`、
+`PairedTraceBootstrapResult` 或 `PrimaryIDInterpretation` 即使 structural-valid，也不能作为 final success
+trust root。
+
+若 already-SPENT admission 已合法成立，此连续链条的任一步发生 exception/failure，该 invocation 必须
+返回或记录 `PREDICTION_EVALUATION_FAILURE`，不得同时产生 final successful result 或发布 partial
+scientific output。若 state 为 UNSPENT、没有 first exposure，或不能与 requested `PreTestFreeze` 合法
+重绑定，finalizer 必须在读取 artifact/forecast 前 hard reject；此时不得伪造 evaluation failure，因为
+尚无可证明的 official exposure。
+
+真实 future runner 的顺序精确为：UNSPENT state，在第一次 official forecast generation **之前**调用
+`record_first_official_test_execution(...)`，得到 SPENT state，生成全部 exact locked forecasts，然后只
+调用一次 finalizer。若 forecast generation 本身失败，caller 必须立即以
+`FORECAST_GENERATION` 调用 `record_prediction_evaluation_failure(...)`；不得把 partial forecasts 交给
+finalizer，也不得重新生成、patch 或 rerun spent sets。Slice 17 finalizer 不调用 `.predict()`、不生成
+forecast、不自动记录 first exposure；它只消费 already-SPENT state 与已经生成的 raw
+`ForecastRecord` inventories。
+
 ## 13. Input transform 与 output scale
 
 Core context、target、forecast、metrics 永远是 raw counts。Primary point track 只允许下列
@@ -628,6 +654,14 @@ Bootstrap 只 resample test traces；training-seed set 保持固定，不在 pri
 该 CI 表示 conditional on the preregistered finite training-seed set 的 test-trace sampling uncertainty，
 不声称完整量化 training stochasticity。Per-seed MSE/RMSE 与 frozen training-seed dispersion 必须单独
 报告，但不能改变 Primary point estimate 或 CI。
+
+### Fixed-seed dispersion report v1
+
+Fixed-seed dispersion report 精确定义为按 frozen ascending training-seed order 完整报告 finite vector
+`(training_seed, Test MSE_r, Test RMSE_r)`。该 vector 本身就是 v1 的 frozen stochastic-dispersion
+diagnostic；不得临时另算 standard deviation、variance、standard error、coefficient of variation、
+range 或 IQR 作为 official scalar dispersion statistic。它不进入 Test Algorithm MSE，不进入 bootstrap
+resampling unit，也不改变 Primary-ID label；不得平均、选择、删除或 ensemble training seeds。
 
 禁止 window bootstrap、sample-cell bootstrap、scenario-draw bootstrap、best-seed bootstrap 与
 primary bootstrap 内 training-seed resampling；未来若改变，必须另行预注册新的 inferential estimand。
