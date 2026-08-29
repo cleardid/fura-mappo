@@ -1,23 +1,20 @@
 # WP-03B Prediction Baseline Scientific Protocol
 
-状态：WP-03B scientific design 已冻结；implementation preparation 仅在本 design-freeze docs 完成
-独立审查、用户手动 Commit/Push 与 GitHub Actions 后解锁。历史 review facts：candidate v1 为
-BLOCKER 0、MAJOR 2、MINOR 1；candidate v2 为 BLOCKER 0、MAJOR 3、MINOR 1；candidate v3 在关闭
-B2/B3/B* selection、failed-seed semantics、Primary ID labels 与 learned-config total ordering 后为
-BLOCKER 0、MAJOR 2、MINOR 1；candidate v4 在关闭 evaluation/B5 completeness 与 stale-status issues
-后为 BLOCKER 0、MAJOR 2、MINOR 1。本次聚焦补齐 pre-training data freeze、spent-test governance 与
-generic-P B5 support；不预先声称本修订已通过审查。本 acceptance 仅接受 prediction baseline /
-evaluation protocol，不是 predictor performance、forecasting benefit、control value 或 MAPPO 的科学
-证据。开始任何
-WP-03B implementation preparation 前，本 docs patch 必须完成独立审查、用户手动 Commit/Push，
-且 GitHub Actions 通过。
+状态：`WP-03 IMPLEMENTATION CLOSED`。WP-03 Slice 1–17 implementation 已 accepted；WP-03
+accepted implementation Commit 为 `55dd9ef5f951d9328266b8e331ba5ae68854b414`，Commit message 为
+`feat: close WP-03B official evaluation orchestration`，GitHub Actions CPU checks run #40 为
+`completed / success`。本 engineering acceptance 不是 predictor performance、forecasting benefit、
+control value、uncertainty benefit、MAPPO evidence 或其他 scientific evidence。当前没有真实 WP-03
+scientific result，没有执行真实 official prediction experiment，没有发生 `FIRST OFFICIAL TEST
+EXECUTION`，`test_id` / `test_ood` 均未真实从 `UNSPENT` 转为 `SPENT`。Sections 1–20 的 frozen
+scientific definitions 保持不变。
 
 ## 1. 范围与硬门禁
 
 WP-03B 冻结 architecture-neutral point-prediction baseline、objective、metric、model-selection、
-uncertainty 与 ID/OOD governance。它不实现 predictor、baseline、metric evaluator、training code，
-也不选择 Transformer/LSTM/TCN/MLP、optimizer、learning rate、hidden dimension、official split
-sizes、official prediction seeds 或 MAPPO architecture。
+uncertainty 与 ID/OOD governance。已接受的 Slice 1–17 implementation 只实现该 frozen protocol 的
+architecture-neutral engineering boundary；不选择 Transformer/LSTM/TCN/MLP、optimizer、learning
+rate、hidden dimension、official split sizes、official prediction seeds 或 MAPPO architecture。
 
 在有效 Formal H1 scientific outcome 产生并完成解释前，继续禁止 official prediction dataset
 generation、official predictor training、official ID/OOD experiment、large multi-seed prediction run、
@@ -801,20 +798,42 @@ Primary environment SHA-256:
 d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1
 ```
 
-当前 Formal primary traces 为 `0 / 256`；Formal paired results、aggregate、verdict、sensitivity 均为
-0。`1092d9c...` 仅是历史 WP-02D3 accepted implementation checkpoint。WP-03A 后合法 source changes
-已终止旧的 docs-only descendant execution freeze。服务器恢复后必须 sync latest accepted main，
-重新冻结 Formal H1 execution provenance/accepted execution baseline，完成 server readiness preflight，
-并取得用户明确授权后才可运行 Formal H1；不得机械运行旧 runner command。
+当前 Formal execution 状态为：
+
+```text
+primary traces: 0/256
+paired: 0
+aggregate: 0
+verdict: 0
+sensitivity: 0
+artifact root: absent
+```
+
+`1092d9c87bfff8ba6c1f2132734480112d7b5975` 仅是历史 WP-02D3 accepted implementation
+checkpoint，不得在 current main 上机械执行旧 runner command。
+`55dd9ef5f951d9328266b8e331ba5ae68854b414` 是已接受的 WP-03 implementation/code-content
+reference；它不是将传给 Formal H1 provenance gate 的 final refrozen execution SHA，也不是 Formal H1
+execution authorization。
 
 ## 21. Acceptance boundary 与下一阶段
 
-WP-03B acceptance 只表示本 scientific protocol/design 已接受，不表示 predictor 已验证、forecasting
-改善 control、uncertainty 有益、controller 获益或 MAPPO 有益。下一阶段仅记录为：
+WP-03 implementation acceptance 只表示 frozen scientific protocol 与 Slice 1–17 engineering
+implementation 已接受，不表示 predictor 已验证、forecasting 改善 control、uncertainty 有益、
+controller 获益或 MAPPO 有益。下一阶段精确为：
 
 ```text
-WP-03B implementation preparation
+Formal H1 execution-provenance refreeze and non-executing readiness audit
 ```
 
-它只能在本 docs patch 独立审查通过、用户手动 Commit/Push 且 GitHub Actions 通过后开始，并继续
-受 Formal H1 门禁约束。
+未来允许顺序精确为：
+
+```text
+sync latest accepted main
+-> refreeze exact Formal H1 execution provenance against that accepted HEAD
+-> server non-executing readiness audit
+-> explicit user authorization
+-> Formal H1 execution
+```
+
+在 explicit user authorization 前不得执行最后一步；本状态同步不提供 Formal H1 execution
+authorization，并继续受 Formal H1 门禁约束。

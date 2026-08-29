@@ -1,10 +1,13 @@
 # 项目状态
 
-更新日期：2026-08-26
+更新日期：2026-08-29
 
 ## 已验证稳定基线
 
 ```text
+WP-03 accepted implementation Commit：55dd9ef5f951d9328266b8e331ba5ae68854b414
+Commit：feat: close WP-03B official evaluation orchestration
+GitHub Actions CPU checks run #40：completed / success
 WP-03A accepted implementation Commit：13cb39933ac65926332ca6c528ef271e1c739aa5
 WP-02D3 实现 Commit：1092d9c87bfff8ba6c1f2132734480112d7b5975
 WP-02D2 docs checkpoint：6c2e8c67598f0d2ceda727d3c975a18fa6037fdd
@@ -21,7 +24,9 @@ WP-01A：wp01a-stable
 WP-00：wp00-stable
 ```
 
-docs-only 收尾 Commit 不自引用自身 SHA；当前 HEAD 以 `git rev-parse HEAD` 为准。
+本 docs-only closure Commit 不自引用自身未知 SHA。用户完成 manual Commit → Push main → GitHub
+Actions success 后，必须通过 `git rev-parse HEAD` 取得新的 latest accepted main SHA；下一阶段对该
+accepted HEAD 重新冻结 exact Formal H1 execution provenance。
 
 ## 工作包状态
 
@@ -39,8 +44,9 @@ docs-only 收尾 Commit 不自引用自身 SHA；当前 HEAD 以 `git rev-parse 
 | WP-02D1 | 已完成 | strict H1 preregistration、artifact/results/verdict audit chain、paired runner 与统计基线 |
 | WP-02D2 | 已完成 | bounded task-target root-information exhaustive diagnostic verifier 已接受 |
 | WP-02D3 | 已完成 | Formal H1 execution orchestration / persistence hardening 已接受 |
+| WP-03 | IMPLEMENTATION CLOSED | Slice 1–17 implementation 已接受；未执行真实 WP-03 scientific experiment |
 | WP-03A | 已完成 | Prediction Interface & Dataset Protocol 已独立审查、Commit/Push，GitHub Actions 通过 |
-| WP-03B | 设计已冻结 | Prediction Baseline Scientific Protocol；仅 protocol acceptance，未实现或执行科学实验 |
+| WP-03B | IMPLEMENTATION CLOSED | Frozen scientific protocol 与 Slice 1–17 implementation 已接受；无 scientific result |
 
 ## WP-01 冻结接口与协议
 
@@ -499,7 +505,7 @@ final working tree: clean
 
 ## WP-02D3 冻结能力
 
-WP-02D3 accepted implementation Commit 与 Formal H1 accepted implementation SHA：
+WP-02D3 历史 accepted implementation Commit / execution checkpoint SHA：
 `1092d9c87bfff8ba6c1f2132734480112d7b5975`。准确定位是
 `Formal H1 execution orchestration / persistence hardening`；它不改变 H1 scientific
 specification、environment science、Reactive、Primary Oracle、D2 verifier 或 preregistration。
@@ -543,15 +549,15 @@ aggregate:  artifacts/wp02d_h1_formal_v1/primary_aggregate.json
 verdict:    artifacts/wp02d_h1_formal_v1/primary_verdict.json
 ```
 
-未来调用必须继续传 accepted implementation SHA：
+历史 runner command 仅记录如下，不得在 current main 上机械执行：
 
 ```bash
 python -m fura_mappo.experiments._formal_h1_runner \
   --accepted-implementation-sha 1092d9c87bfff8ba6c1f2132734480112d7b5975
 ```
 
-未来 docs checkpoint Commit 是该 implementation 的合法 docs-only descendant，不替代 accepted
-implementation SHA。本 checkpoint 不执行上述命令。
+该命令只定位历史 WP-02D3 checkpoint，不是 current execution instruction。本 checkpoint 不执行
+上述命令。
 
 ## WP-02D3 验收
 
@@ -663,16 +669,16 @@ passed
 WP-03A engineering acceptance 证据；它们不是 Formal H1 evidence、predictor scientific validation、
 forecasting improves control、probabilistic uncertainty beneficial 或 MAPPO beneficial 的证据。
 
-## WP-03B Prediction Baseline Scientific Protocol 冻结状态
+## WP-03 IMPLEMENTATION CLOSED
 
-WP-03B 的 architecture-neutral scientific design 已冻结，权威定义见
-`docs/PREDICTION_BASELINE_PROTOCOL.md`。Docs candidate v1 review 为 BLOCKER 0、MAJOR 2、MINOR 1；
-candidate v2 review 为 BLOCKER 0、MAJOR 3、MINOR 1；candidate v3 review 为 BLOCKER 0、MAJOR 2、
-MINOR 1；candidate v4 review 为 BLOCKER 0、MAJOR 2、MINOR 1。后续 focused revision 不预先声称
-approved；implementation preparation 仍以 independent docs review → user Commit/Push → GitHub
-Actions 完成作为门禁。本 acceptance 仅接受 protocol，不是 predictor performance、
-forecasting benefit、control value、uncertainty benefit 或 MAPPO evidence；未实现 predictor、baseline、
-metric evaluator 或 training code，也未运行 official prediction experiment。
+WP-03B 的 architecture-neutral scientific protocol 继续以
+`docs/PREDICTION_BASELINE_PROTOCOL.md` 为权威定义，WP-03 Slice 1–17 implementation 已 accepted。
+WP-03 accepted implementation Commit 为 `55dd9ef5f951d9328266b8e331ba5ae68854b414`，Commit message 为
+`feat: close WP-03B official evaluation orchestration`；GitHub Actions CPU checks run #40 为
+`completed / success`。这是 engineering acceptance，不是 predictor performance、forecasting benefit、
+control value、uncertainty benefit、MAPPO evidence 或其他 scientific evidence。当前没有真实 WP-03
+scientific result，没有执行真实 official prediction experiment，没有发生 `FIRST OFFICIAL TEST
+EXECUTION`，`test_id` / `test_ood` 均未真实从 `UNSPENT` 转为 `SPENT`。
 
 冻结的 operational hierarchy 为 B0 Zero、B1 Persistence、B2 Masked context mean、B3 validation-
 selected EWMA、B4 static train climatology、B5 absolute-step train climatology，以及 L0 learned
@@ -764,28 +770,42 @@ identities、protocol/version/provenance 及两层 freeze；不得覆盖第一�
 Learned config 只能依据 Validation Algorithm RMSE 选择，`B*` 只能依据 deterministic validation
 baseline Primary RMSE 选择，且都不能读取 control/Oracle/MAPPO outcome。`DemandTrace.intensities`
 diagnostic 在 WP-03B official protocol
-中禁用。下一阶段只记录为
-`WP-03B implementation preparation`，且只能在本 docs patch 独立审查、用户手动 Commit/Push 与
-GitHub Actions 通过后开始。
+中禁用。WP-03 implementation 已关闭；以上 frozen scientific governance 保持原样。
 
 ## 当前执行策略与 server queue
 
-WP-02D1、WP-02D2、WP-02D3 与 WP-03A 均已完成并接受，但 WP-02D overall 仍在进行中，因为
-Formal H1 scientific gate 尚未执行。`1092d9c...` 仍是历史 WP-02D3 accepted implementation
-checkpoint；WP-03A 已在其后合法修改 `src/**`，因此旧的“`1092d9c...` 后只允许 docs/changelog
-descendant” execution freeze 已不再是未来最终 execution baseline。
+WP-02D1、WP-02D2、WP-02D3 与 WP-03 Slice 1–17 均已完成并接受，但 WP-02D overall 仍在进行中，
+因为 Formal H1 scientific gate 尚未执行。`1092d9c87bfff8ba6c1f2132734480112d7b5975`
+仅保留为历史 WP-02D3 accepted implementation checkpoint，不得在 current main 上机械执行其历史
+runner command。`55dd9ef5f951d9328266b8e331ba5ae68854b414` 是已接受的 WP-03
+implementation/code-content reference；它不是将传给 Formal H1 provenance gate 的 final refrozen
+execution SHA，也不是 Formal H1 execution authorization。
 
-服务器恢复后必须先同步 latest accepted main、重新冻结 Formal H1 accepted execution baseline /
-provenance、重新做 readiness preflight 并取得用户明确授权。此前不得启动 formal data generation。
-当前 Formal H1 仍未运行，formal primary
-traces 仍为 `0 / 256`，正式 seeds 仍为 `20260819..20261074`；未生成 256 formal NPZ、formal
-artifact inventory、formal paired JSONL、formal aggregate 或 formal primary verdict，也未运行
-formal H=0 set、formal H=2 primary rollout、H sensitivity 或 stress sensitivity。不得记录任何
-formal point estimate、LCB/UCB 或 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
+下一阶段精确为 `Formal H1 execution-provenance refreeze and non-executing readiness audit`。未来允许
+顺序精确为：
 
-WP-03B scientific design 已冻结。下一阶段只记录为 `WP-03B implementation preparation`，且必须
-等待本 docs patch 独立审查、用户手动 Commit/Push 与 GitHub Actions 通过。Formal H1 scientific
-outcome 产生前仍不得进行 official predictor training、official prediction dataset generation、official
-ID/OOD experiment、large multi-seed prediction runs、GPU predictor training、forecast-guided controller
-main experiment 或 MAPPO training；也不决定 Transformer/LSTM/TCN/MLP、optimizer、learning rate、
-hidden size、official split sizes、official prediction seeds 或 MAPPO architecture。
+```text
+sync latest accepted main
+-> refreeze exact Formal H1 execution provenance against that accepted HEAD
+-> server non-executing readiness audit
+-> explicit user authorization
+-> Formal H1 execution
+```
+
+在 explicit user authorization 前不得执行最后一步。当前 Formal execution 状态为：
+
+```text
+primary traces: 0/256
+paired: 0
+aggregate: 0
+verdict: 0
+sensitivity: 0
+artifact root: absent
+```
+
+正式 seeds 仍为 `20260819..20261074`；不得记录任何 formal point estimate、LCB/UCB 或
+PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。Formal H1 scientific outcome 产生前仍不得进行
+official predictor training、official prediction dataset generation、official ID/OOD experiment、large
+multi-seed prediction runs、GPU predictor training、forecast-guided controller main experiment 或 MAPPO
+training；也不决定 Transformer/LSTM/TCN/MLP、optimizer、learning rate、hidden size、official split
+sizes、official prediction seeds 或 MAPPO architecture。

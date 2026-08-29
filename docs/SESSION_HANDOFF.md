@@ -1,33 +1,40 @@
 # 会话交接
 
-更新日期：2026-08-26
+更新日期：2026-08-29
 
 ## 当前唯一任务
 
 当前唯一任务为：
 
 ```text
-WP-03B — Prediction Baseline Scientific Protocol Design
-CURRENT STAGE: DESIGN-FREEZE ACCEPTANCE
-NEXT GATED STAGE: WP-03B IMPLEMENTATION PREPARATION
+WP-03 IMPLEMENTATION CLOSED
+CURRENT STAGE: Formal H1 execution-provenance refreeze preparation
+NEXT GATED STAGE: Formal H1 execution-provenance refreeze and non-executing readiness audit
 
 DO NOT RUN FORMAL H1 YET
-Formal traces = 0 / 256
+WP-03 accepted implementation Commit:
+55dd9ef5f951d9328266b8e331ba5ae68854b414
+
+Formal primary traces: 0/256
+paired: 0
+aggregate: 0
+verdict: 0
+sensitivity: 0
+artifact root: absent
 ```
 
-WP-02D1、WP-02D2、WP-02D3 与 WP-03A 均已完成并接受，但 WP-02D overall 仍在进行中，因为
-Formal H1 scientific gate 尚未执行。WP-03B scientific protocol design 已冻结；implementation
-preparation 仅由 independent docs review → user Commit/Push → GitHub Actions 全部门禁完成后解锁，
-不启动 official prediction science、MAPPO 或 formal data generation。历史 candidate v4 在关闭
-evaluation/B5 completeness 与 stale-status issues 后，独立 review 为 BLOCKER 0、MAJOR 2、MINOR 1；
-后续 focused revision 不预先声称 approved。
-`1092d9c...` 保留为历史 WP-02D3
-accepted implementation；WP-03A 已在其后合法修改 `src/**`，所以它不是未来 final execution
-baseline。
+WP-02D1、WP-02D2、WP-02D3 与 WP-03 Slice 1–17 均已完成并接受，但 WP-02D overall 仍在进行中，
+因为 Formal H1 scientific gate 尚未执行。WP-03 engineering acceptance 不是 scientific evidence；
+没有执行真实 WP-03 official prediction experiment，没有发生 `FIRST OFFICIAL TEST EXECUTION`，
+`test_id` / `test_ood` 均未真实 `SPENT`。`1092d9c...` 仅保留为历史 WP-02D3 checkpoint；
+`55dd9ef5f951d9328266b8e331ba5ae68854b414` 是已接受的 WP-03 implementation/code-content
+reference，不是将传给 Formal H1 provenance gate 的 final refrozen execution SHA，也不构成 Formal H1
+execution authorization。
 
 ## 稳定基线
 
 ```text
+WP-03 accepted implementation：55dd9ef5f951d9328266b8e331ba5ae68854b414
 WP-03A accepted implementation：13cb39933ac65926332ca6c528ef271e1c739aa5
 WP-02D3 实现：1092d9c87bfff8ba6c1f2132734480112d7b5975
 WP-02D2 docs checkpoint：6c2e8c67598f0d2ceda727d3c975a18fa6037fdd
@@ -41,7 +48,9 @@ WP-01C 实现：29a042f7b9fc80d3356cd5c63df1cd26b4078d9b
 WP-01C 标签：wp01c-stable
 ```
 
-docs-only 收尾 Commit 不自引用自身 SHA；后续会话必须真实读取当前 HEAD。
+本 docs-only closure Commit 不自引用自身未知 SHA。用户完成 manual Commit → Push main → GitHub
+Actions success 后，必须通过 `git rev-parse HEAD` 取得新的 latest accepted main SHA；下一阶段对该
+accepted HEAD 重新冻结 exact Formal H1 execution provenance。
 
 ## WP-02D1 完成结论
 
@@ -261,13 +270,12 @@ verdict strict readback 前不输出 per-seed `D_i` 或 provisional scientific s
 ## 当前 formal execution 状态
 
 ```text
-Formal primary traces generated: 0 / 256
-Formal H1 controller rollouts: 0
-Formal artifact inventory: 0
-Formal paired results: 0
-Formal aggregate: 0
-Formal verdict: 0
-Formal sensitivity: 0
+Formal primary traces: 0/256
+paired: 0
+aggregate: 0
+verdict: 0
+sensitivity: 0
+artifact root: absent
 ```
 
 ## WP-02D2 冻结实现边界
@@ -379,9 +387,9 @@ uncertainty beneficial 或 MAPPO beneficial；这些科学实验尚未执行。
 - formal H=0 set、formal H=2 primary rollout、H sensitivity、stress sensitivity
 - formal point estimate、LCB/UCB 或 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome
 
-WP-03A 不启动或解锁上述 formal 工作。WP-02D overall 仍未完成。服务器恢复后，必须同步 latest
-accepted main、重新冻结 Formal H1 execution provenance/accepted execution baseline、重新 preflight
-并取得用户明确授权。冻结 scientific identities 继续为：
+WP-03 implementation closure 不启动或解锁上述 formal 工作。WP-02D overall 仍未完成。下一阶段只做
+Formal H1 execution-provenance refreeze 与 server non-executing readiness audit；只有取得用户明确
+授权后才可运行 Formal H1。冻结 scientific identities 继续为：
 
 ```text
 H1 spec SHA-256:
@@ -391,12 +399,12 @@ Primary environment SHA-256:
 d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1
 ```
 
-## WP-03B scientific design freeze handoff
+## WP-03 implementation closure handoff
 
-权威协议为 `docs/PREDICTION_BASELINE_PROTOCOL.md`，决策为 D-040。WP-03B acceptance 只接受
-architecture-neutral prediction baseline/evaluation protocol；不是 predictor performance、forecasting
-benefit、control value、uncertainty benefit 或 MAPPO evidence。本 checkpoint 不包含 source/test/config
-修改，也没有 predictor/baseline/metric/training implementation。
+权威科学协议仍为 `docs/PREDICTION_BASELINE_PROTOCOL.md` 与 D-040；closure governance 见 D-041。
+WP-03 Slice 1–17 engineering implementation 已 accepted，但这不是 predictor performance、forecasting
+benefit、control value、uncertainty benefit 或 MAPPO evidence。当前没有真实 WP-03 scientific result，
+没有 `FIRST OFFICIAL TEST EXECUTION`，test sets 未真实 `SPENT`。
 
 冻结 hierarchy 为 B0 Zero、B1 Persistence、B2 masked context mean、B3 EWMA、B4 static train
 climatology、B5 absolute-step train climatology 与 L0 learned point predictor。B4 对 unique time steps
@@ -469,9 +477,19 @@ fresh previously unexposed test_id/test_ood，相对 spent sets 的 trace_id、s
 与 `realized_trace_sha256` 全局不相交，满足 condition/OOD rules，并新建 manifest、
 test identities、protocol/version/provenance 与两层 freezes；failure record/spent identities 必须保留。
 
-下一阶段只记录为 `WP-03B implementation preparation`，且只能在本 docs patch 独立 review、用户
-手动 Commit/Push 与 GitHub Actions 通过后开始。Formal H1 scientific outcome 产生前，不得进行
-official predictor training、official prediction dataset generation、official ID/OOD experiment、large
-multi-seed prediction runs、GPU predictor training、forecast-guided controller main experiment 或 MAPPO
-training；不得决定 Transformer/LSTM/TCN/MLP、optimizer、learning rate、hidden size、official split
-sizes、official prediction seeds 或 MAPPO architecture。
+下一阶段精确为 `Formal H1 execution-provenance refreeze and non-executing readiness audit`。未来顺序
+精确为：
+
+```text
+sync latest accepted main
+-> refreeze exact Formal H1 execution provenance against that accepted HEAD
+-> server non-executing readiness audit
+-> explicit user authorization
+-> Formal H1 execution
+```
+
+本 docs patch 不构成 execution authorization；在 explicit user authorization 前不得执行最后一步。
+Formal H1 scientific outcome 产生前，不得进行 official predictor training、official prediction dataset
+generation、official ID/OOD experiment、large multi-seed prediction runs、GPU predictor training、
+forecast-guided controller main experiment 或 MAPPO training；不得决定 Transformer/LSTM/TCN/MLP、
+optimizer、learning rate、hidden size、official split sizes、official prediction seeds 或 MAPPO architecture。

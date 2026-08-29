@@ -504,3 +504,34 @@
   ID/OOD、large multi-seed/GPU training、forecast-guided control 与 MAPPO。Formal H1 identities 与
   formal zero-output state 均不变；服务器恢复后仍须 sync latest accepted main、重新冻结 execution
   provenance/baseline、preflight 并取得用户授权。
+
+## D-041：关闭 WP-03 implementation 并转交 Formal H1 execution-provenance refreeze
+
+- 状态：已接受
+- 项目状态：`WP-03 IMPLEMENTATION CLOSED`。D-040 frozen WP-03B scientific protocol 继续完全有效；
+  本决策不修改 D-040 的科学定义。D-040 中 `next = implementation preparation` 等阶段性 wording
+  是历史状态，现由 D-041 supersede。
+- Engineering acceptance：WP-03 Slice 1–17 engineering implementation 已 accepted；WP-03 accepted
+  implementation Commit 为
+  `55dd9ef5f951d9328266b8e331ba5ae68854b414`。该 acceptance 不是 scientific evidence；当前没有真实
+  WP-03 scientific result，没有执行真实 official prediction experiment，没有发生
+  `FIRST OFFICIAL TEST EXECUTION`，test sets 未真实 `SPENT`。
+- Formal H1 状态：formal primary traces 为 `0/256`，paired、aggregate、verdict、sensitivity 均为 0，
+  artifact root absent。`55dd9ef5f951d9328266b8e331ba5ae68854b414` 是已接受的 WP-03
+  implementation/code-content reference；它不是将传给 Formal H1 provenance gate 的 final refrozen
+  execution SHA，也不是 execution authorization。
+- Docs closure provenance：本 docs-only closure Commit 不自引用自身未知 SHA。用户完成 manual Commit
+  → Push main → GitHub Actions success 后，必须通过 `git rev-parse HEAD` 取得新的 latest accepted main
+  SHA；下一阶段对该 accepted HEAD 重新冻结 exact Formal H1 execution provenance。
+- 下一阶段：`Formal H1 execution-provenance refreeze and non-executing readiness audit`。未来顺序精确为：
+
+```text
+sync latest accepted main
+-> refreeze exact Formal H1 execution provenance against that accepted HEAD
+-> server non-executing readiness audit
+-> explicit user authorization
+-> Formal H1 execution
+```
+
+- 本 docs patch 不构成 Formal H1 execution authorization；在 explicit user authorization 前不得执行
+  最后一步。

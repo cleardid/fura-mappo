@@ -4,19 +4,22 @@ Forecast-guided, uncertainty-aware multi-agent resource pre-positioning under no
 
 ## Status
 
-- WP-01A: `wp01a-stable`
-- WP-01B: `wp01b-stable`
-- WP-01C: `wp01c-stable` -> `29a042f7b9fc80d3356cd5c63df1cd26b4078d9b`
-- WP-01C Mac: 421 tests passed on Python 3.11.15.
-- WP-01C A100: 421 tests passed on Python 3.11.15.
-- GitHub Actions `CPU checks`: run #7, success.
-- Current next stage: **WP-02 read-only design** for the resource-service environment and reactive/Oracle control baselines.
+- WP-01: completed (`wp01c-stable` -> `29a042f7b9fc80d3356cd5c63df1cd26b4078d9b`).
+- WP-02A/B/C/D1/D2/D3 engineering: completed and accepted.
+- WP-02D overall: Formal H1 pending; Formal H1 has not been executed.
+- **WP-03 IMPLEMENTATION CLOSED**; WP-03 accepted implementation Commit:
+  `55dd9ef5f951d9328266b8e331ba5ae68854b414`.
+- No WP-03 scientific result or official WP-03 prediction experiment exists.
+- Current next stage: **Formal H1 execution-provenance refreeze and non-executing readiness audit**.
+- Formal H1 execution still requires explicit user authorization.
 
 ## Completed demand system
 
 The package provides four exogenous demand processes, strict YAML configuration v1, stable config hashing, NPZ demand-trace artifact v1, provenance/integrity checks, `fura-demand generate`, `fura-demand summarize`, and deterministic JSON summaries.
 
-The next scientific gate is to compare reactive control with a true-future Oracle in a frozen resource-service environment before adding forecasting or MARL.
+The pending scientific gate remains the preregistered Formal H1 comparison of reactive control with a
+true-future Oracle. It may run only after provenance refreeze, a non-executing readiness audit, and explicit
+user authorization.
 
 ## Documentation
 

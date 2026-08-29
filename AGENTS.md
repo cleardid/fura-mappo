@@ -8,19 +8,20 @@
 - `WP-01` 外生需求生成系统已完成。
 - WP-01 稳定实现：`29a042f7b9fc80d3356cd5c63df1cd26b4078d9b`，标签 `wp01c-stable`。
 - WP-02A/B/C/D1/D2/D3 已完成并接受；Formal H1 science 尚未执行。
-- WP-03A Prediction Interface & Dataset Protocol 已完成并接受；accepted implementation Commit 为
-  `13cb39933ac65926332ca6c528ef271e1c739aa5`。
-- 当前阶段为 `WP-03B — Prediction Baseline Scientific Protocol Design Freeze` acceptance checkpoint，
-  只允许治理文档与 architecture-neutral scientific protocol；不得修改 WP-01/WP-02 冻结科学语义。
-- 历史 candidate v4 独立 review 为 BLOCKER 0、MAJOR 2、MINOR 1；后续 focused revision 的 acceptance
-  必须以独立审查确认事实为准，不在治理文档中预先声称 approved。
-- `WP-03B implementation preparation` 只能在 design-freeze docs patch 独立审查、用户手动
-  Commit/Push 与 GitHub Actions 通过后开始；official prediction science 仍受 Formal H1 门禁约束。
+- `WP-03 IMPLEMENTATION CLOSED`；accepted implementation：
+  `55dd9ef5f951d9328266b8e331ba5ae68854b414`。
+- WP-03 Slice 1–17 engineering implementation 已接受，但没有真实 WP-03 scientific result。
+- Formal H1 scientific gate 尚未执行；Formal primary traces 为 `0/256`，artifact root absent。
+- `55dd9ef5...` 只是已接受的 WP-03 implementation/code-content reference；它不是将传给 Formal H1
+  provenance gate 的 final refrozen execution SHA，也不是 Formal H1 execution authorization。
+- 当前下一阶段：`Formal H1 execution-provenance refreeze and non-executing readiness audit`。
 - WP-03B official predictors/baselines 必须是 deterministic、stateless、跨调用无 persistent state，
   且只能读取 WP-03A 冻结的有限 causal `PredictionContext` 与 immutable fitted artifact。
-- 正式 predictor 实验、uncertainty 实验、MAPPO、PyTorch/GPU training、ID/OOD 主实验继续锁定。
-- Formal H1 在服务器恢复后必须基于最新 accepted main 重新冻结 execution provenance，并由用户
-  明确授权；不得运行旧 Formal H1 command 或正式 seeds。
+- Official predictor science、WP-03 official experiment、`FIRST OFFICIAL TEST EXECUTION`、真实
+  `SPENT` transition、uncertainty 实验、MAPPO、PyTorch/GPU scientific workload 与 ID/OOD 主实验
+  继续锁定。
+- 未取得用户 explicit authorization 前不得执行 Formal H1；不得机械运行旧 Formal H1 command 或
+  正式 seeds。
 
 ## 开发环境
 

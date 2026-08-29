@@ -1,10 +1,12 @@
 # 统计分析计划
 
 状态：WP-02D1 primary H1 gate、WP-02D2 bounded diagnostic verifier 与 WP-02D3 Formal H1
-execution hardening 均已完成并接受。WP-03A Prediction Interface & Dataset Protocol 亦已完成并
-接受。formal data 尚未生成，formal H1 尚未运行。WP-03B Prediction Baseline Scientific Protocol
-design 已冻结；该 acceptance 只接受 analysis protocol，不是 predictive/control evidence。当前不启动
-任何 official predictor、forecast-control、uncertainty、ID/OOD 或 MAPPO scientific analysis。
+execution hardening 均已完成并接受。`WP-03 IMPLEMENTATION CLOSED`：WP-03 Slice 1–17
+implementation 已 accepted，WP-03 accepted implementation Commit 为
+`55dd9ef5f951d9328266b8e331ba5ae68854b414`（`feat: close WP-03B official evaluation
+orchestration`），GitHub Actions CPU checks run #40 为 `completed / success`。formal data 尚未生成，
+formal H1 尚未运行；该 engineering acceptance 不是 predictive/control evidence。当前不启动任何
+official predictor、forecast-control、uncertainty、ID/OOD 或 MAPPO scientific analysis。
 
 ## 第一科学门槛
 
@@ -137,10 +139,23 @@ python -m fura_mappo.experiments._formal_h1_runner \
 `artifacts/wp02d_h1_formal_v1/`，并固定 `traces/`、artifact inventory、primary paired JSONL、
 aggregate 与 verdict 路径。不存在第二套 formal evidence path。
 
-服务器恢复后，必须以最新 accepted main 重新冻结 Formal H1 accepted execution baseline，随后在
-执行前及关键 publication 边界验证真实 repo root、`main`、clean working tree、HEAD/origin、
-accepted implementation/WP-02C ancestry 与实际 loaded code path。重新冻结 execution provenance
-不得改变 H1 science 或下列科学 identities。
+`55dd9ef5f951d9328266b8e331ba5ae68854b414` 是已接受的 WP-03 implementation/code-content
+reference；它不是将传给 Formal H1 provenance gate 的 final refrozen execution SHA，也不是 Formal H1
+execution authorization。下一阶段精确为
+`Formal H1 execution-provenance refreeze and non-executing readiness audit`，未来允许顺序精确为：
+
+```text
+sync latest accepted main
+-> refreeze exact Formal H1 execution provenance against that accepted HEAD
+-> server non-executing readiness audit
+-> explicit user authorization
+-> Formal H1 execution
+```
+
+在 explicit user authorization 前不得执行最后一步。Refreeze 后，必须在执行前及关键 publication
+边界验证真实 repo root、`main`、clean working tree、HEAD/origin、accepted implementation/WP-02C
+ancestry 与实际 loaded code path。重新冻结 execution provenance 不得改变 H1 science 或下列科学
+identities。
 
 Restart/resume 必须是 provenance-bound、strict、no-overwrite：inventory 已存在时不生成 trace；
 inventory 不存在时只复用严格有效的既有 trace，缺失 trace 才可在重新验证 provenance 后生成
@@ -331,25 +346,19 @@ execution 之前锁定，任何 test_id/test_ood evaluation、结果读取或 pu
 ## 当前 formal execution 状态
 
 ```text
-Formal primary traces generated: 0 / 256
-Formal H1 controller rollouts: 0
-Formal artifact inventory: 0
-Formal paired results: 0
-Formal aggregate: 0
-Formal verdict: 0
-Formal sensitivity: 0
+primary traces: 0/256
+paired: 0
+aggregate: 0
+verdict: 0
+sensitivity: 0
+artifact root: absent
 ```
 
-WP-02D1、WP-02D2、WP-02D3 与 WP-03A 均已完成并接受；WP-03B scientific design 已冻结；
-WP-02D overall 仍在进行中。WP-03A
-accepted implementation Commit 为 `13cb39933ac65926332ca6c528ef271e1c739aa5`，approved review
-patch SHA-256 为 `5f5be8109784a5783caefc1e129edf2f2deb53aa52379b8be0c2c4120f8384b9`；
-独立 review 为 BLOCKER 0、MAJOR 0、MINOR 0，GitHub Actions passed。该工程 acceptance 不构成
-prediction scientific evidence。WP-03B protocol acceptance 同样不构成 prediction scientific evidence；
-下一阶段只允许在本 docs patch 独立审查、用户手动 Commit/Push 与 Actions 通过后的
-architecture-neutral implementation preparation。
-Formal H1 只能在服务器恢复、latest accepted main 同步、execution provenance 重新冻结、readiness
-preflight 与用户明确授权全部完成后启动。
+WP-02D1、WP-02D2、WP-02D3 与 WP-03 Slice 1–17 均已完成并接受；WP-02D overall 仍在进行中。
+WP-03 implementation engineering acceptance 不构成 prediction scientific evidence。当前没有真实
+WP-03 scientific result，没有执行真实 official prediction experiment，没有发生 `FIRST OFFICIAL TEST
+EXECUTION`，`test_id` / `test_ood` 均未真实 `SPENT`。Formal H1 只能按上述顺序并在用户明确授权后
+启动。
 
 正式 seeds 仍为 `20260819..20261074`，当前未生成 256 formal NPZ、formal artifact inventory、
 formal paired JSONL、formal aggregate 或 formal primary verdict，也未运行 Primary H=2、formal
