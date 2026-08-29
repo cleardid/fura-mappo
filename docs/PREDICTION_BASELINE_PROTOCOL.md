@@ -384,6 +384,50 @@ Official secondary metrics 仅冻结：
 Mandatory breakdowns 为 per horizon、per zone、per-trace distribution、`target == 0`、`target > 0`、
 per condition、ID、near-OOD、structural-OOD 与 per training seed。
 
+### Mandatory breakdown exact reporting semantics
+
+Mandatory breakdown 冻结为 **deterministic descriptive partition + local cell statistics**，不是新的
+inferential estimand。既有 `PointMetricSummary` 的 overall trace/horizon/zone-equal MSE/RMSE、MAE、
+signed bias、per-horizon、per-zone 与 per-trace 定义保持不变。每个 frozen learned training seed 必须
+独立保留完整 `PointMetricSummary`；不得先平均 forecasts、构造 ensemble、选择 best seed，或另算新的
+seed aggregate。
+
+Target-value strata 精确定义为：
+
+```text
+ZERO:     target_count == 0
+POSITIVE: target_count > 0
+```
+
+对每个 trace `i`、official 1-based lead `h`、zone `z` 与 stratum `s`，只在该 stratum 的 valid
+anchors 中记录 local observation count `n[i,h,z,s]`，并计算该 local cell 内 residual
+`prediction - target` 的 mean squared residual、mean absolute residual 与 signed mean bias。若
+`n == 0`，该 row 仍必须存在，并精确记录 `count = 0`、`MSE = absent`、`MAE = absent`、
+`Bias = absent`；不得 drop、用零替代、impute 或从另一 stratum 借值。Zero demand 是合法
+observation，不是 failure 或 penalty。
+
+本协议**不定义** overall ZERO RMSE、overall POSITIVE RMSE，也不定义任何跨 trace、lead、zone 或
+stratum 的 ZERO/POSITIVE aggregate weighting。这些完整 rows 只是 mandatory descriptive
+diagnostics，不得 rescue、替换或改变 Primary RMSE 与 Primary-ID label。
+
+Per-condition partition 只能读取 frozen `PredictionSource.condition_sha256`。Condition groups 按
+`condition_sha256` lexical ascending；每组报告 exact member trace IDs、对应既有
+`TracePointMetrics` 与 member target-stratum rows，不计算 condition-level aggregate metric。组内 trace
+顺序保持 frozen split trace order，每条 trace 恰好属于一个 condition。
+
+ID / near-OOD / structural-OOD partition 只能读取 frozen `TraceOODAssignment.kind` 与 `cell_id`，不得
+根据 numerical outcome 重分类。Coarse kind order 精确为 `ID < NEAR_OOD < STRUCTURAL_OOD`；三个
+coarse groups 必须全部报告，允许并显式保留 empty membership。每组只报告 exact member trace IDs、
+对应既有 `TracePointMetrics` 与 target-stratum rows，不计算新的 kind-level aggregate metric。
+
+每个实际 frozen `(kind, cell_id)` 形成一个独立 OOD cell group，按上述 kind rank 后接 `cell_id`
+lexical ascending 排序；组内 trace 继续保持 frozen split order。不得跨 cell pooling 后创建新的
+aggregate。所有 condition/kind/cell memberships 都是 exact deterministic partitions。
+
+这些 diagnostics 全部 descriptive only：不参与 B* 或 learned config/seed selection，不参与 Test
+Algorithm point estimate 或 paired bootstrap，不改变 Primary-ID label，且 OOD breakdown 不能 rescue
+ID Primary result。B0--B5 与每个 frozen learned training seed 均独立保留其完整 breakdown evidence。
+
 WAPE、sMAPE、MASE、Poisson deviance 不进入 WP-03B official inferential metric set；未来若使用，
 必须另行冻结为 diagnostic，且不能 rescue Primary RMSE。
 
