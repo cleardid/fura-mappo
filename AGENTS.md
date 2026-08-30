@@ -7,21 +7,22 @@
 - 研究目标：非平稳时空需求下，研究未来需求预测及不确定性对多智能体主动资源预置的价值。
 - `WP-01` 外生需求生成系统已完成。
 - WP-01 稳定实现：`29a042f7b9fc80d3356cd5c63df1cd26b4078d9b`，标签 `wp01c-stable`。
-- WP-02A/B/C/D1/D2/D3 已完成并接受；Formal H1 science 尚未执行。
+- WP-02A/B/C/D1/D2/D3 已完成并接受；WP-02D Primary gate 已以 `PASS` 科学接受。
 - `WP-03 IMPLEMENTATION CLOSED`；accepted implementation：
   `55dd9ef5f951d9328266b8e331ba5ae68854b414`。
 - WP-03 Slice 1–17 engineering implementation 已接受，但没有真实 WP-03 scientific result。
-- Formal H1 scientific gate 尚未执行；Formal primary traces 为 `0/256`，artifact root absent。
-- `55dd9ef5...` 只是已接受的 WP-03 implementation/code-content reference；它不是将传给 Formal H1
-  provenance gate 的 final refrozen execution SHA，也不是 Formal H1 execution authorization。
-- 当前下一阶段：`Formal H1 execution-provenance refreeze and non-executing readiness audit`。
+- Formal H1 Primary execution/provenance HEAD 为
+  `0b0742f51d59c2a8aa63614993e51131016cd33c`；256/256 traces valid，verdict 为 `PASS`，formal
+  sensitivity 未执行。
+- 当前阶段：`WP-03 Official Prediction Experiment Specification Freeze`。
 - WP-03B official predictors/baselines 必须是 deterministic、stateless、跨调用无 persistent state，
   且只能读取 WP-03A 冻结的有限 causal `PredictionContext` 与 immutable fitted artifact。
 - Official predictor science、WP-03 official experiment、`FIRST OFFICIAL TEST EXECUTION`、真实
   `SPENT` transition、uncertainty 实验、MAPPO、PyTorch/GPU scientific workload 与 ID/OOD 主实验
   继续锁定。
-- 未取得用户 explicit authorization 前不得执行 Formal H1；不得机械运行旧 Formal H1 command 或
-  正式 seeds。
+- 不得重新执行 Formal H1 Primary、执行 sensitivity 或修改 Formal evidence。WP-03 official experiment
+  spec 未经独立 review、用户手动 Commit/Push 与 GitHub Actions acceptance 前，不得生成 official
+  prediction dataset、训练 predictor 或执行 official test。
 
 ## 开发环境
 
@@ -29,7 +30,7 @@
 - Mac Conda：`fura-mappo-mac`。
 - A100 Conda：`fura-mappo`。
 - A100 系统 Python 2.7 不得使用。
-- GPU/大型实验只由用户在服务器明确启动。
+- A100-UU 可作为未来可选服务器；GPU/大型实验仍只由用户在服务器明确启动。
 
 ## 科学与代码规范
 

@@ -4,9 +4,11 @@
 execution hardening 均已完成并接受。`WP-03 IMPLEMENTATION CLOSED`：WP-03 Slice 1–17
 implementation 已 accepted，WP-03 accepted implementation Commit 为
 `55dd9ef5f951d9328266b8e331ba5ae68854b414`（`feat: close WP-03B official evaluation
-orchestration`），GitHub Actions CPU checks run #40 为 `completed / success`。formal data 尚未生成，
-formal H1 尚未运行；该 engineering acceptance 不是 predictive/control evidence。当前不启动任何
-official predictor、forecast-control、uncertainty、ID/OOD 或 MAPPO scientific analysis。
+orchestration`），GitHub Actions CPU checks run #40 为 `completed / success`。WP-02D Primary gate 已
+在 execution/provenance HEAD `0b0742f51d59c2a8aa63614993e51131016cd33c` 上以
+`SCIENTIFICALLY ACCEPTED PASS` 关闭；formal sensitivity 未执行。当前阶段仅为
+`WP-03 Official Prediction Experiment Specification Freeze`，不启动任何 official predictor、
+forecast-control、uncertainty、ID/OOD 或 MAPPO scientific analysis。
 
 ## 第一科学门槛
 
@@ -135,27 +137,16 @@ python -m fura_mappo.experiments._formal_h1_runner \
   --accepted-implementation-sha 1092d9c87bfff8ba6c1f2132734480112d7b5975
 ```
 
-本阶段不执行。runner 固定使用 `configs/experiments/wp02d_h1.yaml` 与唯一 formal root
+上述历史命令不得再次机械执行。已接受的 Formal H1 Primary 使用 exact execution/provenance HEAD
+`0b0742f51d59c2a8aa63614993e51131016cd33c`。runner 固定使用
+`configs/experiments/wp02d_h1.yaml` 与唯一 formal root
 `artifacts/wp02d_h1_formal_v1/`，并固定 `traces/`、artifact inventory、primary paired JSONL、
 aggregate 与 verdict 路径。不存在第二套 formal evidence path。
 
-`55dd9ef5f951d9328266b8e331ba5ae68854b414` 是已接受的 WP-03 implementation/code-content
-reference；它不是将传给 Formal H1 provenance gate 的 final refrozen execution SHA，也不是 Formal H1
-execution authorization。下一阶段精确为
-`Formal H1 execution-provenance refreeze and non-executing readiness audit`，未来允许顺序精确为：
-
-```text
-sync latest accepted main
--> refreeze exact Formal H1 execution provenance against that accepted HEAD
--> server non-executing readiness audit
--> explicit user authorization
--> Formal H1 execution
-```
-
-在 explicit user authorization 前不得执行最后一步。Refreeze 后，必须在执行前及关键 publication
-边界验证真实 repo root、`main`、clean working tree、HEAD/origin、accepted implementation/WP-02C
-ancestry 与实际 loaded code path。重新冻结 execution provenance 不得改变 H1 science 或下列科学
-identities。
+本 docs-only closure 不重新执行 Primary、不执行 sensitivity，也不修改、删除、重建或复制 formal
+evidence。Evidence files 继续只保留在服务器 formal root，不加入 Git。执行时及关键 publication 边界
+已经验证真实 repo root、`main`、clean working tree、HEAD/origin、accepted implementation/WP-02C
+ancestry 与实际 loaded code path；这些 provenance checks 不改变 H1 science 或下列科学 identities。
 
 Restart/resume 必须是 provenance-bound、strict、no-overwrite：inventory 已存在时不生成 trace；
 inventory 不存在时只复用严格有效的既有 trace，缺失 trace 才可在重新验证 provenance 后生成
@@ -343,31 +334,38 @@ candidate training 前冻结并进入 config identity。两者都不能读取 co
 不启用 intensity diagnostic。Scientific identities/config/checkpoint hashes 必须在 first official test
 execution 之前锁定，任何 test_id/test_ood evaluation、结果读取或 publication 后均不得回改。
 
-## 当前 formal execution 状态
+## Formal H1 Primary accepted result
 
 ```text
-primary traces: 0/256
-paired: 0
-aggregate: 0
-verdict: 0
-sensitivity: 0
-artifact root: absent
+WP-02D PRIMARY H1 GATE: SCIENTIFICALLY ACCEPTED PASS
+execution/provenance HEAD: 0b0742f51d59c2a8aa63614993e51131016cd33c
+N planned / valid: 256 / 256
+point estimate: 0.31754293614860113
+one-sided LCB: 0.3133852915914393
+one-sided UCB: 0.32170536510653147
+two-sided 95% interval: [0.3126219878069711, 0.3225008920637088]
+delta_min: 0.02
+artifact inventory logical SHA-256: b24ca39264d46b7c510b2e08650bea06535b27990b4068a13fa4e852202c8a18
+paired results logical SHA-256: 16b28e30df452d512a0cd730ac73c95b8711ee06cb3be6a1d75564a1dfb1239e
+sensitivity: not executed
+server artifact root: artifacts/wp02d_h1_formal_v1/
 ```
 
-WP-02D1、WP-02D2、WP-02D3 与 WP-03 Slice 1–17 均已完成并接受；WP-02D overall 仍在进行中。
-WP-03 implementation engineering acceptance 不构成 prediction scientific evidence。当前没有真实
-WP-03 scientific result，没有执行真实 official prediction experiment，没有发生 `FIRST OFFICIAL TEST
-EXECUTION`，`test_id` / `test_ood` 均未真实 `SPENT`。Formal H1 只能按上述顺序并在用户明确授权后
-启动。
+在 frozen Primary H=2 setting 中，True-future Oracle 相对 Reactive 的 normalized completion fraction
+平均提高约 `0.3175`。该结论不证明 learned predictor 有效、forecasting 改善 control、uncertainty
+有价值、MAPPO 获益或所有环境都有同等效果。Primary verdict 为 `PASS`；sensitivity 未执行，且不能
+rescue、reverse 或改变 Primary verdict，也不是进入下一 design stage 的前置条件。
 
-正式 seeds 仍为 `20260819..20261074`，当前未生成 256 formal NPZ、formal artifact inventory、
-formal paired JSONL、formal aggregate 或 formal primary verdict，也未运行 Primary H=2、formal
-H=0、H sensitivity 或 stress sensitivity。本 checkpoint 不启动或解锁 formal data generation；
-不得记录 formal point estimate、LCB/UCB 或正式 PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。
-在有效 Formal H1 scientific gate 结果产生并完成解释前，不进行 official predictor training、
-official prediction dataset generation、official ID/OOD experiment、large multi-seed prediction runs、
-GPU predictor training、forecast-guided controller main experiment、MAPPO training 或其他 official
-forecast uncertainty/control science；WP-03A 的 deterministic interface/dataset protocol 基础设施
-不构成 predictor scientifically validated、forecasting improves control、probabilistic uncertainty
-beneficial 或 MAPPO beneficial 的科学结果。WP-03B 不决定 Transformer/LSTM/TCN/MLP、optimizer、
-learning rate、hidden size、official split sizes、official prediction seeds 或 MAPPO architecture。
+WP-03 implementation engineering acceptance 仍不构成 prediction scientific evidence。WP-03 official
+scientific experiment 为 `NOT EXECUTED`，`FIRST OFFICIAL TEST EXECUTION` 为 `NOT OCCURRED`，
+`test_id` / `test_ood` 为 `UNSPENT`。Formal H1 PASS 只解锁 read-only
+`WP-03 Official Prediction Experiment Specification Freeze`，不授权 official dataset generation、
+training、forecast、ID/OOD test、forecast-control、uncertainty 或 MAPPO execution。
+
+未来 spec freeze 必须在任何 execution 前确定 exact train/validation/test_id/test_ood sizes 与 source
+inventories/conditions、training seeds、Primary/secondary P identities、DatasetProtocolSpecs/L identities、
+architecture candidate schema 与 deterministic complexity key、optimizer/lr/architecture/objective/
+transform/non-count encoding grids、training budget/epoch/early-stopping/checkpoint rules、B2/B3 grids、
+exact OOD cells、prediction bootstrap resamples/seed/method、runtime/Git/dependency provenance、exact
+Layer A identity 与 Layer B requirements。本 docs closure 不填写这些 experiment values；spec 独立审查、
+用户手动 Commit/Push 与 GitHub Actions acceptance 前不得执行 official prediction work。

@@ -6,20 +6,23 @@ Forecast-guided, uncertainty-aware multi-agent resource pre-positioning under no
 
 - WP-01: completed (`wp01c-stable` -> `29a042f7b9fc80d3356cd5c63df1cd26b4078d9b`).
 - WP-02A/B/C/D1/D2/D3 engineering: completed and accepted.
-- WP-02D overall: Formal H1 pending; Formal H1 has not been executed.
+- WP-02D Primary gate: **SCIENTIFICALLY ACCEPTED PASS** at execution/provenance HEAD
+  `0b0742f51d59c2a8aa63614993e51131016cd33c`; 256/256 traces were valid. Formal sensitivity has not
+  been executed.
 - **WP-03 IMPLEMENTATION CLOSED**; WP-03 accepted implementation Commit:
   `55dd9ef5f951d9328266b8e331ba5ae68854b414`.
 - No WP-03 scientific result or official WP-03 prediction experiment exists.
-- Current next stage: **Formal H1 execution-provenance refreeze and non-executing readiness audit**.
-- Formal H1 execution still requires explicit user authorization.
+- Current stage: **WP-03 Official Prediction Experiment Specification Freeze**.
 
 ## Completed demand system
 
 The package provides four exogenous demand processes, strict YAML configuration v1, stable config hashing, NPZ demand-trace artifact v1, provenance/integrity checks, `fura-demand generate`, `fura-demand summarize`, and deterministic JSON summaries.
 
-The pending scientific gate remains the preregistered Formal H1 comparison of reactive control with a
-true-future Oracle. It may run only after provenance refreeze, a non-executing readiness audit, and explicit
-user authorization.
+In the frozen Primary H=2 setting, the true-future Oracle improved normalized completion fraction over
+Reactive by about 0.3175 on average. This does not establish learned-predictor, forecast-control,
+uncertainty, MAPPO, or cross-environment results. The next stage is read-only specification design/freeze;
+no official prediction data generation, training, or test execution is authorized before independent spec
+review and manual Commit/Push/Actions acceptance.
 
 ## Documentation
 

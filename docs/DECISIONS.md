@@ -535,3 +535,43 @@ sync latest accepted main
 
 - 本 docs patch 不构成 Formal H1 execution authorization；在 explicit user authorization 前不得执行
   最后一步。
+
+## D-042：接受 Formal H1 Primary PASS 并转交 WP-03 official experiment specification freeze
+
+- 状态：已接受
+- Primary acceptance：Formal H1 Primary 已完成独立 evidence audit，并以
+  `SCIENTIFICALLY ACCEPTED PASS` 正式接受。Exact execution/provenance HEAD 为
+  `0b0742f51d59c2a8aa63614993e51131016cd33c`；H1 spec SHA-256 为
+  `fc719e4634ab13ba55d0b95e63497688b3ab07c259d1421c5ed0c468cec3fade`；Primary environment
+  SHA-256 为 `d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1`。
+- Primary result：N planned / valid 为 `256 / 256`；verdict 为 `PASS`；point estimate 为
+  `0.31754293614860113`；one-sided LCB 为 `0.3133852915914393`；one-sided UCB 为
+  `0.32170536510653147`；two-sided 95% interval 为
+  `[0.3126219878069711, 0.3225008920637088]`；H1 `delta_min=0.02`。
+- Evidence identity：artifact inventory logical SHA-256 为
+  `b24ca39264d46b7c510b2e08650bea06535b27990b4068a13fa4e852202c8a18`；paired results logical
+  SHA-256 为 `16b28e30df452d512a0cd730ac73c95b8711ee06cb3be6a1d75564a1dfb1239e`。Raw file SHA-256
+  分别为 `artifact_inventory.json` =
+  `ac21ff7c52f966baace646777e081b3367589cde80f9fb249b405e8301cd8dcf`、
+  `primary_paired_results.jsonl` =
+  `167a6fadec8fba8a96df3975cf3cc417704483fae52605ea98ed945658690065`、
+  `primary_aggregate.json` =
+  `1227b02ffbe7c124ec8cd56fc3416e6075e0307c978867c33928a9a642de7569`、
+  `primary_verdict.json` =
+  `158a3ad84a694f19f7213c6b6869d7ed2ee0246db86cda2b141a76254e623c4a`。Evidence files 继续只
+  保留在服务器 `artifacts/wp02d_h1_formal_v1/`，不得加入 Git 或在本 closure 中修改。
+- Scientific interpretation：仅在 frozen Primary H=2 setting 中，True-future Oracle 相对 Reactive 的
+  normalized completion fraction 平均提高约 `0.3175`。D-002 的 Primary future-information gate 仅在
+  该 frozen setting 下已满足；这不是 learned predictor、forecast-control、uncertainty、MAPPO 或所有
+  环境的科学证据。
+- Sensitivity：formal sensitivity 未执行；它不能 rescue、reverse 或改变 Primary verdict，也不是进入
+  下一 design stage 的前置条件。
+- WP-03 boundary：`WP-03 IMPLEMENTATION CLOSED`；WP-03 official scientific experiment 为
+  `NOT EXECUTED`，`FIRST OFFICIAL TEST EXECUTION` 为 `NOT OCCURRED`，`test_id` / `test_ood`
+  为 `UNSPENT`。
+- Handoff：当前阶段仅为 `WP-03 Official Prediction Experiment Specification Freeze`，只允许
+  read-only scientific design/freeze。Spec 独立审查、用户手动 Commit/Push 与 GitHub Actions
+  acceptance 前，不得生成 official prediction dataset、训练 predictor、生成 official forecasts 或执行
+  official test。本决策不提供 WP-03 official execution authorization。
+- Experiment ledger：本次 Formal H1 Primary execution 登记为
+  `wp02d_formal_h1_primary_v1`，见 `docs/EXPERIMENT_LEDGER.csv`。

@@ -1,6 +1,6 @@
 # 项目状态
 
-更新日期：2026-08-29
+更新日期：2026-08-30
 
 ## 已验证稳定基线
 
@@ -8,6 +8,8 @@
 WP-03 accepted implementation Commit：55dd9ef5f951d9328266b8e331ba5ae68854b414
 Commit：feat: close WP-03B official evaluation orchestration
 GitHub Actions CPU checks run #40：completed / success
+Formal H1 Primary execution/provenance HEAD：0b0742f51d59c2a8aa63614993e51131016cd33c
+Formal H1 Primary verdict：SCIENTIFICALLY ACCEPTED PASS
 WP-03A accepted implementation Commit：13cb39933ac65926332ca6c528ef271e1c739aa5
 WP-02D3 实现 Commit：1092d9c87bfff8ba6c1f2132734480112d7b5975
 WP-02D2 docs checkpoint：6c2e8c67598f0d2ceda727d3c975a18fa6037fdd
@@ -24,9 +26,9 @@ WP-01A：wp01a-stable
 WP-00：wp00-stable
 ```
 
-本 docs-only closure Commit 不自引用自身未知 SHA。用户完成 manual Commit → Push main → GitHub
-Actions success 后，必须通过 `git rev-parse HEAD` 取得新的 latest accepted main SHA；下一阶段对该
-accepted HEAD 重新冻结 exact Formal H1 execution provenance。
+Formal H1 evidence files 继续只保留在服务器 `artifacts/wp02d_h1_formal_v1/`，不得复制到 Git；本
+docs-only closure 不修改、删除或重建 evidence。当前阶段为
+`WP-03 Official Prediction Experiment Specification Freeze`。
 
 ## 工作包状态
 
@@ -40,7 +42,7 @@ accepted HEAD 重新冻结 exact Formal H1 execution provenance。
 | WP-02A | 已完成 | 确定性资源服务环境；Mac、GitHub Actions、A100 验收通过 |
 | WP-02B | 已完成 | Reactive baseline；Mac、独立审查、GitHub Actions、A100 验收通过 |
 | WP-02C | 已完成 | Rolling True-future Oracle；Mac、独立审查、GitHub Actions、A100 验收通过 |
-| WP-02D | 进行中 | D1、D2、D3 均已接受；Formal H1 scientific gate 未运行 |
+| WP-02D | PRIMARY GATE CLOSED — PASS | D1、D2、D3 已接受；Primary scientifically accepted，sensitivity 未执行 |
 | WP-02D1 | 已完成 | strict H1 preregistration、artifact/results/verdict audit chain、paired runner 与统计基线 |
 | WP-02D2 | 已完成 | bounded task-target root-information exhaustive diagnostic verifier 已接受 |
 | WP-02D3 | 已完成 | Formal H1 execution orchestration / persistence hardening 已接受 |
@@ -319,6 +321,10 @@ PROTOCOL_FAIL: any protocol violation
 
 Secondary metrics 与 sensitivity 均不能改变 primary verdict。
 
+该冻结 gate 的 Primary execution/evidence audit 已完成，verdict 为 `PASS`。在 frozen Primary H=2
+setting 中，True-future Oracle 相对 Reactive 的 normalized completion fraction 平均提高约 `0.3175`。
+该限定结论不证明 learned predictor、forecast-control、uncertainty、MAPPO 或其他环境中的效果。
+
 ## WP-02D Primary stress cell
 
 - `DriftingHotspotDemand`
@@ -381,20 +387,34 @@ format：79 files already formatted
 完整 CPU：629 passed in 23.12s
 CPU 验收：全部通过
 最终工作树：干净
-正式 H1：未运行
+正式 H1：未运行（WP-02D1 acceptance 当时的历史状态）
 ```
 
-## 当前 formal execution 状态
+## Formal H1 Primary accepted evidence ledger
 
 ```text
-Formal primary traces generated: 0 / 256
-Formal H1 controller rollouts: 0
-Formal artifact inventory: 0
-Formal paired results: 0
-Formal aggregate: 0
-Formal verdict: 0
-Formal sensitivity: 0
+execution/provenance HEAD: 0b0742f51d59c2a8aa63614993e51131016cd33c
+H1 spec SHA-256: fc719e4634ab13ba55d0b95e63497688b3ab07c259d1421c5ed0c468cec3fade
+Primary environment SHA-256: d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1
+N planned / valid: 256 / 256
+verdict: PASS
+point estimate: 0.31754293614860113
+one-sided LCB: 0.3133852915914393
+one-sided UCB: 0.32170536510653147
+two-sided 95% interval: [0.3126219878069711, 0.3225008920637088]
+delta_min: 0.02
+artifact inventory logical SHA-256: b24ca39264d46b7c510b2e08650bea06535b27990b4068a13fa4e852202c8a18
+paired results logical SHA-256: 16b28e30df452d512a0cd730ac73c95b8711ee06cb3be6a1d75564a1dfb1239e
+artifact_inventory.json SHA-256: ac21ff7c52f966baace646777e081b3367589cde80f9fb249b405e8301cd8dcf
+primary_paired_results.jsonl SHA-256: 167a6fadec8fba8a96df3975cf3cc417704483fae52605ea98ed945658690065
+primary_aggregate.json SHA-256: 1227b02ffbe7c124ec8cd56fc3416e6075e0307c978867c33928a9a642de7569
+primary_verdict.json SHA-256: 158a3ad84a694f19f7213c6b6869d7ed2ee0246db86cda2b141a76254e623c4a
+sensitivity: not executed
+server artifact root: artifacts/wp02d_h1_formal_v1/
 ```
+
+Primary verdict 已锁定为 `PASS`。Sensitivity 未执行，不能 rescue、reverse 或改变 Primary verdict，
+也不是进入下一 design stage 的前置条件。
 
 ## WP-02D2 冻结能力
 
@@ -772,40 +792,23 @@ baseline Primary RMSE 选择，且都不能读取 control/Oracle/MAPPO outcome�
 diagnostic 在 WP-03B official protocol
 中禁用。WP-03 implementation 已关闭；以上 frozen scientific governance 保持原样。
 
-## 当前执行策略与 server queue
+## 当前阶段与 official experiment queue
 
-WP-02D1、WP-02D2、WP-02D3 与 WP-03 Slice 1–17 均已完成并接受，但 WP-02D overall 仍在进行中，
-因为 Formal H1 scientific gate 尚未执行。`1092d9c87bfff8ba6c1f2132734480112d7b5975`
-仅保留为历史 WP-02D3 accepted implementation checkpoint，不得在 current main 上机械执行其历史
-runner command。`55dd9ef5f951d9328266b8e331ba5ae68854b414` 是已接受的 WP-03
-implementation/code-content reference；它不是将传给 Formal H1 provenance gate 的 final refrozen
-execution SHA，也不是 Formal H1 execution authorization。
+WP-02D Primary gate 已以 `PASS` scientifically accepted；
+`1092d9c87bfff8ba6c1f2132734480112d7b5975` 仅是历史 WP-02D3 accepted implementation checkpoint，
+不得机械执行其历史 runner command。WP-03 仍为 `IMPLEMENTATION CLOSED`：official scientific
+experiment 为 `NOT EXECUTED`，`FIRST OFFICIAL TEST EXECUTION` 为 `NOT OCCURRED`，
+`test_id` / `test_ood` 为 `UNSPENT`。
 
-下一阶段精确为 `Formal H1 execution-provenance refreeze and non-executing readiness audit`。未来允许
-顺序精确为：
+当前阶段精确为 `WP-03 Official Prediction Experiment Specification Freeze`。Formal H1 PASS 只解锁
+这一 read-only scientific design/freeze，不授权直接 execution。未来 spec 至少须在任何 execution 前
+确定 exact train/validation/test_id/test_ood sizes 与 source trace inventories/conditions、training seeds、
+Primary/secondary P identities、DatasetProtocolSpecs/L identities、learned architecture candidate schema、
+deterministic model-complexity key、optimizer/lr/hidden/layer/objective/transform/non-count encoding grids、
+training budget/epoch/early-stopping/checkpoint procedure、B2/B3 grids、exact OOD cells、prediction
+bootstrap resamples/seed/method、runtime/Git/dependency provenance、exact Layer A identity 与 Layer B
+requirements。本 docs closure 不预填这些 values。
 
-```text
-sync latest accepted main
--> refreeze exact Formal H1 execution provenance against that accepted HEAD
--> server non-executing readiness audit
--> explicit user authorization
--> Formal H1 execution
-```
-
-在 explicit user authorization 前不得执行最后一步。当前 Formal execution 状态为：
-
-```text
-primary traces: 0/256
-paired: 0
-aggregate: 0
-verdict: 0
-sensitivity: 0
-artifact root: absent
-```
-
-正式 seeds 仍为 `20260819..20261074`；不得记录任何 formal point estimate、LCB/UCB 或
-PASS/FAIL/INCONCLUSIVE/PROTOCOL_FAIL outcome。Formal H1 scientific outcome 产生前仍不得进行
-official predictor training、official prediction dataset generation、official ID/OOD experiment、large
-multi-seed prediction runs、GPU predictor training、forecast-guided controller main experiment 或 MAPPO
-training；也不决定 Transformer/LSTM/TCN/MLP、optimizer、learning rate、hidden size、official split
-sizes、official prediction seeds 或 MAPPO architecture。
+Spec 独立审查、用户手动 Commit/Push 与 GitHub Actions acceptance 前，不得生成 official prediction
+dataset、训练 predictor、生成 official forecast 或执行 test_id/test_ood；forecast-control、uncertainty、
+MAPPO、ID/OOD scientific experiment 与 GPU scientific workload 继续锁定。

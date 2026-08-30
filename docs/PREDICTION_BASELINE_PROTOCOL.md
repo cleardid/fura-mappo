@@ -9,6 +9,11 @@ scientific result，没有执行真实 official prediction experiment，没有�
 EXECUTION`，`test_id` / `test_ood` 均未真实从 `UNSPENT` 转为 `SPENT`。Sections 1–20 的 frozen
 scientific definitions 保持不变。
 
+WP-02D Primary gate 已在 execution/provenance HEAD
+`0b0742f51d59c2a8aa63614993e51131016cd33c` 上以 `SCIENTIFICALLY ACCEPTED PASS` 关闭；formal
+sensitivity 未执行。Formal H1 PASS 只解锁当前 read-only
+`WP-03 Official Prediction Experiment Specification Freeze`，不授权 WP-03 official execution。
+
 ## 1. 范围与硬门禁
 
 WP-03B 冻结 architecture-neutral point-prediction baseline、objective、metric、model-selection、
@@ -16,9 +21,10 @@ uncertainty 与 ID/OOD governance。已接受的 Slice 1–17 implementation 只
 architecture-neutral engineering boundary；不选择 Transformer/LSTM/TCN/MLP、optimizer、learning
 rate、hidden dimension、official split sizes、official prediction seeds 或 MAPPO architecture。
 
-在有效 Formal H1 scientific outcome 产生并完成解释前，继续禁止 official prediction dataset
-generation、official predictor training、official ID/OOD experiment、large multi-seed prediction run、
-GPU predictor training、forecast-guided controller main experiment、MAPPO training 与 Formal H1。
+Official experiment spec 完成独立 review、用户手动 Commit/Push 与 GitHub Actions acceptance 前，
+继续禁止 official prediction dataset generation、official predictor training、official ID/OOD experiment、
+large multi-seed prediction run、GPU predictor training、forecast-guided controller main experiment、
+MAPPO training 与 official test execution。
 
 WP-03A information boundary 完整继承：canonical target 是 decision boundary `t` 之后的 future
 realized zone-level arrival counts，forecast row 0 是 `t+1`，shape 为 `[P,Z]`。Core context、target、
@@ -798,42 +804,45 @@ Primary environment SHA-256:
 d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1
 ```
 
-当前 Formal execution 状态为：
+已接受的 Formal H1 Primary evidence 为：
 
 ```text
-primary traces: 0/256
-paired: 0
-aggregate: 0
-verdict: 0
-sensitivity: 0
-artifact root: absent
+execution/provenance HEAD: 0b0742f51d59c2a8aa63614993e51131016cd33c
+N planned / valid: 256 / 256
+verdict: PASS
+point estimate: 0.31754293614860113
+one-sided LCB: 0.3133852915914393
+one-sided UCB: 0.32170536510653147
+two-sided 95% interval: [0.3126219878069711, 0.3225008920637088]
+artifact inventory logical SHA-256: b24ca39264d46b7c510b2e08650bea06535b27990b4068a13fa4e852202c8a18
+paired results logical SHA-256: 16b28e30df452d512a0cd730ac73c95b8711ee06cb3be6a1d75564a1dfb1239e
+sensitivity: not executed
+server artifact root: artifacts/wp02d_h1_formal_v1/
 ```
 
 `1092d9c87bfff8ba6c1f2132734480112d7b5975` 仅是历史 WP-02D3 accepted implementation
 checkpoint，不得在 current main 上机械执行旧 runner command。
-`55dd9ef5f951d9328266b8e331ba5ae68854b414` 是已接受的 WP-03 implementation/code-content
-reference；它不是将传给 Formal H1 provenance gate 的 final refrozen execution SHA，也不是 Formal H1
-execution authorization。
+Formal evidence files 继续只保留在服务器 evidence root；本 docs closure 不重新执行 Primary、不执行
+sensitivity，也不修改、删除、重建或复制 artifacts。这里的 H1 `delta_min=0.02` 只属于 Formal H1
+gate，与第 16 节 WP-03 Primary-ID protocol 的“无 practical-effect delta”是不同协议。
 
 ## 21. Acceptance boundary 与下一阶段
 
 WP-03 implementation acceptance 只表示 frozen scientific protocol 与 Slice 1–17 engineering
 implementation 已接受，不表示 predictor 已验证、forecasting 改善 control、uncertainty 有益、
-controller 获益或 MAPPO 有益。下一阶段精确为：
+controller 获益或 MAPPO 有益。WP-03 official scientific experiment 为 `NOT EXECUTED`，
+`FIRST OFFICIAL TEST EXECUTION` 为 `NOT OCCURRED`，`test_id` / `test_ood` 为 `UNSPENT`。当前阶段
+精确为：
 
 ```text
-Formal H1 execution-provenance refreeze and non-executing readiness audit
+WP-03 Official Prediction Experiment Specification Freeze
 ```
 
-未来允许顺序精确为：
-
-```text
-sync latest accepted main
--> refreeze exact Formal H1 execution provenance against that accepted HEAD
--> server non-executing readiness audit
--> explicit user authorization
--> Formal H1 execution
-```
-
-在 explicit user authorization 前不得执行最后一步；本状态同步不提供 Formal H1 execution
-authorization，并继续受 Formal H1 门禁约束。
+该 read-only freeze 必须在任何 execution 前确定 exact train/validation/test_id/test_ood sizes、source
+trace inventories/conditions、training seeds、Primary/secondary P identities、DatasetProtocolSpecs/L
+identities、architecture candidate schema 与 deterministic complexity key、optimizer/lr/architecture/
+objective/transform/non-count encoding grids、training budget/epoch/early-stopping/checkpoint procedure、
+B2/B3 grids、exact OOD cells、prediction bootstrap resamples/seed/method、runtime/Git/dependency
+provenance、exact Layer A identity 与 Layer B requirements。本轮不决定这些 experiment values；spec
+独立审查、用户手动 Commit/Push 与 GitHub Actions acceptance 前不得生成 official data、训练 predictor
+或执行 official test。本状态同步不提供 WP-03 official execution authorization。
