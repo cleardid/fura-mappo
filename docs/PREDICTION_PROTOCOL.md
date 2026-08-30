@@ -14,9 +14,10 @@ baseline 与 MAPPO 共用的因果数据和接口边界。核心层保持 NumPy/
 architecture-neutral，不实现神经网络、optimizer、训练 loop、reward、forecast-guided controller
 或 MAPPO。
 
-服务器不可用期间允许在 Mac 开发、测试和审查本基础设施。下列工作继续锁定：
+以下是 `WP-03A implementation-time historical gate`：服务器不可用期间只允许在 Mac 开发、测试和
+审查本基础设施；当时下列工作被锁定：
 
-- Formal H1 与正式 seeds `20260819..20261074`；
+- Formal H1 Primary execution 与正式 seeds `20260819..20261074`；
 - official prediction dataset generation、predictor training 和 calibration；
 - official forecast-control、ID/OOD、uncertainty 与 MAPPO 实验；
 - PyTorch/GPU/large multi-seed workload；
@@ -26,11 +27,18 @@ Formal H1 science 不因 WP-03A 改变：Primary H=2、N=256、estimand、bootst
 `fc719e4634ab13ba55d0b95e63497688b3ab07c259d1421c5ed0c468cec3fade` 与 environment hash
 `d1d856b13ac8edf79422428a96bddc03b901053dbeaabe56571e9baeef6eafa1` 均保持不变。
 
-`1092d9c87bfff8ba6c1f2132734480112d7b5975` 仍是历史 WP-02D3 accepted implementation，
-但 WP-03 source changes 会有意结束其“后继只能是 docs/changelog”的旧 execution freeze。服务器
-恢复后，必须先同步最新 accepted main、重新冻结 Formal H1 execution provenance/accepted
-execution baseline、做 readiness preflight 并取得用户明确授权，才可运行 Formal H1。WP-03A 不修改
-旧 runner 来提前放宽此门禁。
+`1092d9c87bfff8ba6c1f2132734480112d7b5975` 仍是历史 WP-02D3 accepted implementation。WP-03A
+implementation-time handoff 曾要求后续同步 accepted main、重新冻结 Formal H1 execution provenance、
+执行 readiness preflight 并取得用户授权；这些 historical execution instructions 已由 D-042 supersede，
+不得机械重放。当前 superseding status 为：
+
+```text
+Formal H1 Primary: SCIENTIFICALLY ACCEPTED PASS
+execution/provenance HEAD: 0b0742f51d59c2a8aa63614993e51131016cd33c
+sensitivity: not executed
+```
+
+WP-03A 没有修改该 Formal H1 result，也不改变本文件的 causal/data/interface scientific definitions。
 
 ## 2. Canonical prediction task
 
@@ -296,6 +304,14 @@ terminal mask、same-trace/different-artifact repackaging、intensity-isolated r
 position/priority signed-zero equivalence、artifact-level signed-zero split rejection、nonzero float
 sensitivity、split/OOD leakage、strict serialization 和 frozen H1 hash regression。
 
-当前 Formal H1 仍未运行：formal traces、controller rollouts、inventory、paired results、aggregate、
-verdict 与 sensitivity 全部为零。WP-03A 不提供预测性能结果，不解锁 predictor science，不解锁
-MAPPO，也不支持“forecasting 已证明有控制价值”的表述。
+Formal H1 Primary 已在 execution/provenance HEAD
+`0b0742f51d59c2a8aa63614993e51131016cd33c` 上以 `SCIENTIFICALLY ACCEPTED PASS` 关闭；formal
+sensitivity 未执行。该结果不修改本文件冻结的 WP-03A information/dataset interface，也不提供 learned
+prediction、forecast-control、uncertainty 或 MAPPO 证据。
+
+WP-03 official point-prediction v1 scientific design 已由 D-043 冻结，完整 exact fulfillment 见
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。该 specification 的 accepted-main publication 状态由 external
+governance 确定，不由文件自证。WP-03 official experiment 为 `NOT EXECUTED`，`FIRST OFFICIAL TEST
+EXECUTION` 为 `NOT OCCURRED`，`test_id` / `test_ood` 为 `UNSPENT`；scientific design freeze 不授权
+execution。Accepted-main publication 后的下一 engineering stage 为
+`WP-03 Execution Stack Implementation Preparation`。

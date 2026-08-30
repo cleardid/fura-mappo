@@ -11,8 +11,12 @@ scientific definitions 保持不变。
 
 WP-02D Primary gate 已在 execution/provenance HEAD
 `0b0742f51d59c2a8aa63614993e51131016cd33c` 上以 `SCIENTIFICALLY ACCEPTED PASS` 关闭；formal
-sensitivity 未执行。Formal H1 PASS 只解锁当前 read-only
-`WP-03 Official Prediction Experiment Specification Freeze`，不授权 WP-03 official execution。
+sensitivity 未执行。Formal H1 PASS 只解锁了 read-only WP-03 scientific design/freeze，不授权 WP-03
+official execution；该 design 现由 D-043 冻结。
+
+WP-03 official point-prediction v1 scientific design 已由 D-043 冻结；其 exact v1 fulfillment 见
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。该 specification 的 accepted-main publication 状态由 external
+governance 确定，不由文件自证。
 
 ## 1. 范围与硬门禁
 
@@ -21,10 +25,16 @@ uncertainty 与 ID/OOD governance。已接受的 Slice 1–17 implementation 只
 architecture-neutral engineering boundary；不选择 Transformer/LSTM/TCN/MLP、optimizer、learning
 rate、hidden dimension、official split sizes、official prediction seeds 或 MAPPO architecture。
 
-Official experiment spec 完成独立 review、用户手动 Commit/Push 与 GitHub Actions acceptance 前，
-继续禁止 official prediction dataset generation、official predictor training、official ID/OOD experiment、
-large multi-seed prediction run、GPU predictor training、forecast-guided controller main experiment、
-MAPPO training 与 official test execution。
+上述是本 architecture-neutral protocol 自身的范围边界；`wp03_point_primary_v1` 已在
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中冻结 MLP architecture、optimizer、width、learning rate、
+official split sizes、source seeds、training seeds 与其他 exact v1 fulfillment，不修改本协议的 generic
+requirements。
+
+Repository publication 必须经过 independent patch review、用户手工 Commit/Push 与 GitHub Actions
+success；该 external publication rule 与 D-043 scientific design freeze 均不授权 official prediction
+dataset generation、official predictor training、official ID/OOD experiment、large multi-seed prediction
+run、GPU predictor training、forecast-guided controller main experiment、MAPPO training 或 official test
+execution。
 
 WP-03A information boundary 完整继承：canonical target 是 decision boundary `t` 之后的 future
 realized zone-level arrival counts，forecast row 0 是 `t+1`，shape 为 `[P,Z]`。Core context、target、
@@ -268,9 +278,12 @@ total ordering 的第 4 项：
 O0 MSE < O1 Poisson NLL
 ```
 
-Poisson NLL 的 exact numerical stability、positive link 与 floor 必须在未来 implementation spec 中
-冻结，并在任何训练前进入 config hash；不得按 test 结果调整。选择 O1 不表示 Poisson variance
-正确、完整 predictive distribution 已校准，或 counts 真正 conditionally Poisson。
+Generic protocol 要求 Poisson NLL 的 exact numerical stability、positive link 与 floor 在任何训练前
+冻结并进入 config hash；`wp03_point_primary_v1` 已在
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中冻结 `softplus(raw) + 1e-6` positive link/floor。Exact safe
+implementation 与 serialization 仍须在 execution-stack engineering acceptance 中锁定，不得按 test 结果
+调整。选择 O1 不表示 Poisson variance 正确、完整 predictive distribution 已校准，或 counts 真正
+conditionally Poisson。
 
 MAE、Huber 与 `log1p(target)` MSE 不作为 canonical mean objective，因为它们不能在当前协议下直接
 替代 conditional arithmetic mean estimand。
@@ -299,7 +312,9 @@ Primary RMSE = sqrt(Primary MSE)
 ## 9. Multiple-training-seed estimand
 
 所有 candidate configs 必须使用同一个、预先冻结的 training-seed set，至少包含 3 个 distinct
-seeds。Exact 数量和值须在服务器恢复后的 official prediction experiment spec 中、任何训练前冻结。
+seeds。Generic protocol 要求 exact 数量和值在任何训练前冻结；`wp03_point_primary_v1` 的 exact v1
+fulfillment 已在 `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中冻结为
+`610001, 610002, 610003`。
 同一个 fixed seed set 用于全部 objective、transform、L、architecture 与 hyperparameter configs。
 任何 candidate training、validation forecast/metric 或 early stopping 前，第 19 节 Layer A freeze
 必须已完成；训练只能读取 frozen train split，validation 只能读取 frozen validation split。
@@ -620,14 +635,18 @@ learned config-level choices 使用第 9 节定义的 `Validation Algorithm RMSE
 6. canonical config ordering
 ```
 
-未来 implementation/model spec 必须在任何 candidate training 前定义 deterministic model-complexity
-key；本 WP 不定义具体 architecture 或 complexity formula。Candidate config schema、candidate set /
-search space、canonical serialization 与 canonical final ordering 也必须在任何 candidate training 前
-冻结，并进入 experiment/config identity。不得在 validation/test 结果出现后定义何者更简单、改变
-search space 或改变 tie order。
+Generic protocol 要求在任何 candidate training 前定义 deterministic model-complexity key；本
+architecture-neutral protocol 不定义具体 architecture 或 complexity formula。`wp03_point_primary_v1`
+的 exact v1 fulfillment 已在 `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中冻结为
+`(num_trainable_parameters,)` 及其 canonical formula。Candidate config schema、candidate set / search
+space、canonical serialization 与 canonical final ordering 也必须在任何 candidate training 前冻结，
+并进入 experiment/config identity。不得在 validation/test 结果出现后定义何者更简单、改变 search
+space 或改变 tie order。
 
-Early stopping 只读取 validation。未来 implementation spec 必须在训练前冻结 max epochs、patience、
-minimum improvement 与 earliest-best-checkpoint tie-break。WP-03B 推荐 no final retrain：选择后不合并
+Early stopping 只读取 validation。Generic protocol 要求在训练前冻结 max epochs、patience、minimum
+improvement 与 earliest-best-checkpoint tie-break；`wp03_point_primary_v1` 的 exact v1 fulfillment 已在
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中冻结为 max epochs `300`、patience `30`、absolute minimum
+improvement `1e-5` 与 earliest-best tie rule。WP-03B 推荐 no final retrain：选择后不合并
 train+validation 重训，避免产生未经相同 validation checkpoint-selection 审核的新程序。
 
 ## 15. Statistical uncertainty
@@ -670,8 +689,10 @@ resampling unit，也不改变 Primary-ID label；不得平均、选择、删除
 primary bootstrap 内 training-seed resampling；未来若改变，必须另行预注册新的 inferential estimand。
 
 Prediction bootstrap 使用独立 PCG64 namespace，不复用 H1 的 50,000 resamples 或 seed
-`90260819`。Exact resample count、seed 与 quantile method 必须在服务器恢复后的 official prediction
-experiment spec 中、任何 official evaluation 前冻结。OOD 单独报告，不能 rescue 或改变 ID Primary
+`90260819`。Generic protocol 要求 exact resample count、seed 与 quantile method 在任何 official
+evaluation 前冻结；`wp03_point_primary_v1` 的 exact v1 fulfillment 已在
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中冻结为 20,000 resamples、PCG64 seed `910001`、linear
+quantile method 与 two-sided 95% percentile CI。OOD 单独报告，不能 rescue 或改变 ID Primary
 comparison。
 
 ### Primary ID interpretation rule
@@ -706,8 +727,10 @@ Markov transition persistence 或 burst frequency/duration；每个 cell 单独�
 Structural-OOD 是 held-out demand process family，该 family 不得出现在 train/validation/calibration。
 Primary OOD protocol 保持相同 `ZoneSchema`、zone ordering、episode length/time support。Zone geometry
 shift 属于未来独立 protocol，不能与 main OOD 混合。`condition_sha256` 是 identity guard，不自动
-代表科学 OOD taxonomy。Exact OOD cells、weights、seeds 与 split sizes 在服务器恢复后的 official
-experiment spec 中冻结。
+代表科学 OOD taxonomy。Generic protocol 要求 exact OOD cells、weights、seeds 与 split sizes 在
+execution 前冻结；`wp03_point_primary_v1` 的 exact v1 fulfillment 已在
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中冻结为两个 near-drift cells 与一个 structural-Markov cell、
+各 32 traces、无 OOD cell weights、无 pooled official OOD score，以及对应 exact seed ranges。
 
 ## 17. Prediction 与 control 严格隔离
 
@@ -722,8 +745,11 @@ prediction model/spec locked
 -> separate forecast-guided control protocol
 ```
 
-Control 结果不得回改 predictor、L、P、objective、transform、checkpoint 或 baseline selection。Formal
-H1 尚未执行，因此 official forecast-control experiment 仍被禁止。
+Control 结果不得回改 predictor、L、P、objective、transform、checkpoint 或 baseline selection。
+Formal H1 Primary 已在 execution/provenance HEAD
+`0b0742f51d59c2a8aa63614993e51131016cd33c` 上以 `SCIENTIFICALLY ACCEPTED PASS` 关闭；formal
+sensitivity 未执行。Prediction 与 control 继续严格隔离。Official forecast-control 当前仍未授权，原因是
+WP-03 prediction experiment 尚未执行/锁定，而不是因为 Formal H1 Primary 尚未执行。
 
 ## 18. Probabilistic forecast handoff
 
@@ -831,18 +857,17 @@ gate，与第 16 节 WP-03 Primary-ID protocol 的“无 practical-effect delta�
 WP-03 implementation acceptance 只表示 frozen scientific protocol 与 Slice 1–17 engineering
 implementation 已接受，不表示 predictor 已验证、forecasting 改善 control、uncertainty 有益、
 controller 获益或 MAPPO 有益。WP-03 official scientific experiment 为 `NOT EXECUTED`，
-`FIRST OFFICIAL TEST EXECUTION` 为 `NOT OCCURRED`，`test_id` / `test_ood` 为 `UNSPENT`。当前阶段
-精确为：
+`FIRST OFFICIAL TEST EXECUTION` 为 `NOT OCCURRED`，`test_id` / `test_ood` 为 `UNSPENT`。
 
-```text
-WP-03 Official Prediction Experiment Specification Freeze
-```
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 记录 D-043 frozen exact v1 values：
+`wp03_point_primary_v1` 只执行 `P=2`，calibration 为 `EMPTY`；TRAIN/VALIDATION/TEST_ID/TEST_OOD
+分别为 `128/64/128/96` traces；三个 OOD cells 独立 descriptive-only；四个 `P=2`、
+`L in {4,8,16,32}` protocols 全部预冻结；learned search 为 64 个 MLP configs、三个 fixed training
+seeds、192 runs；prediction bootstrap 为 20,000 resamples、PCG64 seed `910001`、linear quantile。
 
-该 read-only freeze 必须在任何 execution 前确定 exact train/validation/test_id/test_ood sizes、source
-trace inventories/conditions、training seeds、Primary/secondary P identities、DatasetProtocolSpecs/L
-identities、architecture candidate schema 与 deterministic complexity key、optimizer/lr/architecture/
-objective/transform/non-count encoding grids、training budget/epoch/early-stopping/checkpoint procedure、
-B2/B3 grids、exact OOD cells、prediction bootstrap resamples/seed/method、runtime/Git/dependency
-provenance、exact Layer A identity 与 Layer B requirements。本轮不决定这些 experiment values；spec
-独立审查、用户手动 Commit/Push 与 GitHub Actions acceptance 前不得生成 official data、训练 predictor
-或执行 official test。本状态同步不提供 WP-03 official execution authorization。
+Scientific design status 为 `WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043`。
+Repository publication 状态由 independent patch review、用户手工 Commit/Push 与 GitHub Actions
+success 的 external governance 确定，不由 specification 自证；该规则不授权生成 official data、
+fitting、training、selection、Layer A/Layer B construction、forecast 或 official test。Accepted-main
+publication 后的下一 engineering stage 仅为 `WP-03 Execution Stack Implementation Preparation`，仍不
+自动获得 execution authorization。

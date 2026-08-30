@@ -13,6 +13,9 @@
 - `docs/ANALYSIS_PLAN.md`：统计原则
 - `docs/PREDICTION_PROTOCOL.md`：WP-03A prediction interface/dataset 冻结协议
 - `docs/PREDICTION_BASELINE_PROTOCOL.md`：WP-03B prediction baseline/evaluation scientific 冻结协议
+- `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`：WP-03 Official Point-Prediction Experiment
+  Specification v1 的 authoritative scientific-design 文档；repository publication 由 external governance
+  确定
 
 ## 当前工作包
 
@@ -30,11 +33,19 @@ selection，Layer B pre-test freeze 不得改 Layer A。任何 executed P 的 B5
 `t+h`；P=2/P=4/P=8 各用独立 protocol/SHA/records，secondary failure 不影响 Primary。First
 official test action 使 exact test_id/test_ood 成为 spent sets，failure recovery 必须使用满足 WP-03A
 global disjointness 的 fresh unexposed tests 与新 manifest/provenance；spent sets 只可 audit/debug，不可重用于
-official result 或 selection。当前阶段精确为
-`WP-03 Official Prediction Experiment Specification Freeze`，只允许 read-only scientific
-design/freeze。该 spec 完成独立 review、用户手动 Commit/Push 与 GitHub Actions acceptance 前，不得
-生成 official prediction dataset、训练 predictor 或执行 official test；Formal H1 PASS 不构成 WP-03
-official execution authorization。
+official result 或 selection。WP-03 official point-prediction v1 scientific design 已由 D-043 冻结；
+Formal H1 PASS 不构成 WP-03 official execution authorization。
+
+Scientific design status 为
+`WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043`。它只冻结 P2 point prediction，
+P4/P8 不执行，calibration disposition 为 `EMPTY (0 traces)`。完整 exact design 见
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。
+
+Repository publication 状态由 independent patch review、用户手工 Commit/Push 与 GitHub Actions
+success 的 external governance 确定，不由 specification 自证；该 publication rule 与 scientific design
+freeze 都不构成 execution authorization。Accepted-main publication 后的下一 engineering stage 仅为
+`WP-03 Execution Stack Implementation Preparation`。正式实验仍须另行 explicit authorization；
+`FIRST OFFICIAL TEST EXECUTION` 尚未发生，`test_id/test_ood` 仍为 `UNSPENT`。
 
 WP-03A accepted implementation Commit 为 `13cb39933ac65926332ca6c528ef271e1c739aa5`，approved
 review patch SHA-256 为 `5f5be8109784a5783caefc1e129edf2f2deb53aa52379b8be0c2c4120f8384b9`；

@@ -569,9 +569,52 @@ sync latest accepted main
 - WP-03 boundary：`WP-03 IMPLEMENTATION CLOSED`；WP-03 official scientific experiment 为
   `NOT EXECUTED`，`FIRST OFFICIAL TEST EXECUTION` 为 `NOT OCCURRED`，`test_id` / `test_ood`
   为 `UNSPENT`。
-- Handoff：当前阶段仅为 `WP-03 Official Prediction Experiment Specification Freeze`，只允许
-  read-only scientific design/freeze。Spec 独立审查、用户手动 Commit/Push 与 GitHub Actions
-  acceptance 前，不得生成 official prediction dataset、训练 predictor、生成 official forecasts 或执行
-  official test。本决策不提供 WP-03 official execution authorization。
+- Historical handoff（现由 D-043 supersede）：D-042 接受时下一 read-only stage 为
+  `WP-03 Official Prediction Experiment Specification Freeze`。D-042 从未提供 WP-03 official execution
+  authorization；当前 scientific-design 与 publication governance 见 D-043。
 - Experiment ledger：本次 Formal H1 Primary execution 登记为
   `wp02d_formal_h1_primary_v1`，见 `docs/EXPERIMENT_LEDGER.csv`。
+
+## D-043：冻结 WP-03 Official Point-Prediction Experiment Specification v1
+
+- 状态：已接受
+- Decision identity：该状态表示 scientific design decision 已冻结，不表示包含本决策的 Git Commit
+  自我批准。
+- Repository publication：本 specification 只有在 independent patch review 通过后，由用户手工
+  Commit/Push 且 GitHub Actions success，才成为 latest accepted main 的 authoritative published
+  specification；该 external publication rule 不是 execution authorization。
+- Experiment identity：`wp03_point_primary_v1`；v1 只执行 Primary `P=2`，`P=4/P=8` 均为
+  `NOT EXECUTED IN v1`；calibration 为 `EMPTY`、count `0`。
+- Geometry：全部 official traces 使用 `start_step=0`、`num_steps=256`、四个连续 `1x1` zones，
+  与 Formal H1 geometry 相同，但 prediction result 与 H1 verdict 严格独立。
+- Exact splits/seeds：TRAIN 为 128 traces、`410000..410127`；VALIDATION 为 64 traces、
+  `420000..420063`；TEST_ID 为 128 traces、`430000..430127`；TEST_OOD 为 96 traces，包含
+  `NEAR_DRIFT_V020` 32 traces、`440000..440031`，`NEAR_DRIFT_V030` 32 traces、
+  `441000..441031`，以及 `STRUCT_MARKOV_V1` 32 traces、`450000..450031`。全部 seeds 全局唯一。
+- Conditions：ID 使用 Formal-H1-aligned drifting-hotspot condition；两个 near-OOD cells 仅将 velocity
+  x component 从 `0.25` 改为 `0.20` 或 `0.30`；structural-OOD 使用 held-out
+  `markov_switching` family，两个 state intensity totals 均为 `0.65`。三个 OOD cells 均为
+  descriptive-only，没有 weights 或 pooled official OOD score，也不得 rescue Primary ID label。
+- Protocol representation：四个 frozen `DatasetProtocolSpec` 为 `(P=2,L=4/8/16/32)`；当前 API 中
+  P2L4 作为 `primary_protocol` anchor，其他三个置于 `secondary_protocols` 容器，但不表示 P=4/P=8
+  secondary science，也不表示 L4 已被选择。
+- Learned design：stateless two-hidden-layer feed-forward MLP，width `64/128`，ReLU，八维 output，
+  `softplus + 1e-6`；feature 为 transformed history、history mask 与 `absolute_step/255.0`。Complexity
+  key 为 `(num_trainable_parameters,)`。
+- Search/training：L 4 choices、O0/O1、T0/T1、width 2 choices、learning rate
+  `0.0003/0.001`，形成 64 configs；training seeds 为 `610001/610002/610003`，完整执行 192 runs。
+  Optimizer 为 frozen AdamW，full-batch/no-shuffle/float32/no-AMP，max 300 epochs、patience 30、
+  absolute per-seed validation checkpoint improvement `1e-5`、no final retrain；deterministic validation
+  不能由 runner 任意标记通过。
+- Bootstrap：paired whole-TEST_ID-trace percentile bootstrap，20,000 resamples、独立 PCG64 seed
+  `910001`、linear quantile、two-sided 95% CI；不复用 Formal H1 的 bootstrap namespace。
+- Execution boundary：scientific spec freeze 不构成 official data generation、training、Layer A/Layer B、
+  forecast 或 test authorization。Exact runtime values、safe checkpoint/result serialization、plan
+  serialization、runtime provenance capture 与 official orchestrator 仍是 engineering prerequisites，且
+  必须在任何 training 与 Layer A 前 accepted。
+- Authoritative detail：完整 exact values 与 formulas 见
+  `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。
+- Handoff：scientific design status 为
+  `WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043`；accepted-main publication 后的
+  下一 engineering stage 仅为 `WP-03 Execution Stack Implementation Preparation`，仍不得自动执行
+  official experiment。

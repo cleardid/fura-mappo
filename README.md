@@ -12,7 +12,9 @@ Forecast-guided, uncertainty-aware multi-agent resource pre-positioning under no
 - **WP-03 IMPLEMENTATION CLOSED**; WP-03 accepted implementation Commit:
   `55dd9ef5f951d9328266b8e331ba5ae68854b414`.
 - No WP-03 scientific result or official WP-03 prediction experiment exists.
-- Current stage: **WP-03 Official Prediction Experiment Specification Freeze**.
+- Scientific design status: **WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043**.
+- WP-03 official experiment: **NOT EXECUTED**; `FIRST OFFICIAL TEST EXECUTION`: not occurred;
+  `test_id/test_ood`: `UNSPENT`.
 
 ## Completed demand system
 
@@ -20,9 +22,12 @@ The package provides four exogenous demand processes, strict YAML configuration 
 
 In the frozen Primary H=2 setting, the true-future Oracle improved normalized completion fraction over
 Reactive by about 0.3175 on average. This does not establish learned-predictor, forecast-control,
-uncertainty, MAPPO, or cross-environment results. The next stage is read-only specification design/freeze;
-no official prediction data generation, training, or test execution is authorized before independent spec
-review and manual Commit/Push/Actions acceptance.
+uncertainty, MAPPO, or cross-environment results. D-043 freezes P2 point prediction only: P4/P8 are not
+executed and calibration is `EMPTY (0 traces)`. Repository publication is determined externally by independent
+patch review, manual Commit/Push, and successful GitHub Actions; the specification does not self-assert that its
+Commit is accepted, and publication is not execution authorization. The next engineering stage after
+accepted-main publication is only `WP-03 Execution Stack Implementation Preparation`. Official execution
+remains locked without separate explicit authorization.
 
 ## Documentation
 
@@ -32,5 +37,6 @@ review and manual Commit/Push/Actions acceptance.
 - `docs/RESEARCH_PLAN.md`
 - `docs/ANALYSIS_PLAN.md`
 - `docs/DECISIONS.md`
+- `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`
 - `docs/WP01C_SPEC.md`
 - `docs/WP01C_REVIEW.md`

@@ -8,9 +8,13 @@ execution/provenance HEAD `0b0742f51d59c2a8aa63614993e51131016cd33c` 上以
 WP-03 Slice 1–17 implementation 已
 accepted，WP-03 accepted implementation Commit 为 `55dd9ef5f951d9328266b8e331ba5ae68854b414`（`feat: close
 WP-03B official evaluation orchestration`），GitHub Actions CPU checks run #40 为 `completed / success`。
-这是 engineering acceptance，不是科学结果；当前阶段仅为
-`WP-03 Official Prediction Experiment Specification Freeze`，正式 predictor science、uncertainty 与
-MAPPO 仍锁定。
+这是 engineering acceptance，不是科学结果。WP-03 official point-prediction v1 scientific design 已由
+D-043 冻结；正式 predictor science、uncertainty 与 MAPPO 仍锁定。
+
+Scientific design status 为 `WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043`。
+它只冻结 P2 point prediction，P4/P8 不执行，calibration disposition 为 `EMPTY (0 traces)`；完整 exact
+design 见 `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。Repository publication 状态由 external governance
+确定，不由 specification 自证；publication 与 design freeze 都不是 execution authorization。
 
 ## 核心假设
 
@@ -229,15 +233,14 @@ identities、protocol/version/provenance 与两层 freezes；failure record/spen
 WP-03 Slice 1–17 implementation acceptance 不是 predictor performance、forecasting/control benefit、
 uncertainty benefit 或 MAPPO evidence。当前没有真实 WP-03 scientific result，没有执行真实 official
 prediction experiment，没有发生 `FIRST OFFICIAL TEST EXECUTION`，`test_id` / `test_ood` 均未真实
-`SPENT`。Formal H1 PASS 只解锁当前阶段
-`WP-03 Official Prediction Experiment Specification Freeze`，不解锁直接 execution。该 read-only stage
-必须为未来 official experiment 冻结 exact split sizes/source inventories/conditions、training seeds、
-Primary/secondary P、DatasetProtocolSpecs/L、architecture schema/complexity key、optimizer/lr/
-architecture/objective/transform/non-count encoding grids、training budget/early stopping/checkpoint rules、
-B2/B3 grids、OOD cells、prediction bootstrap 与 runtime/Git/dependency provenance，以及 exact Layer A
-identity 与 Layer B requirements；本轮不决定这些值。Spec 独立审查、用户手动 Commit/Push 与 GitHub
-Actions acceptance 前，禁止 official dataset generation、predictor training、official ID/OOD test、
-forecast-control、uncertainty、MAPPO 或 GPU scientific execution。
+`SPENT`。Formal H1 PASS 只解锁了 WP-03 official experiment specification design，不解锁直接
+execution。D-043 已在
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中精确冻结 source inventories/splits、P2 protocols、three
+training seeds、learned candidate space/training/checkpoint rules、four reporting cells、OOD conditions、
+paired whole-trace bootstrap、Layer A mapping、Layer B requirements 与 runtime provenance；P4/P8 和
+calibration 不执行。D-043 scientific design freeze 与 repository publication 均不授权 official dataset
+generation、predictor training、official ID/OOD test、forecast-control、uncertainty、MAPPO 或 GPU
+scientific execution；这些 actions 继续要求未来独立的 explicit authorization 与全部既有 gates。
 
 ## 科学控制
 
@@ -262,14 +265,18 @@ forecast-control、uncertainty、MAPPO 或 GPU scientific execution。
 10. 已完成并接受 WP-03A Prediction Interface & Dataset Protocol
 11. 已完成并接受 WP-03 Slice 1–17；`WP-03 IMPLEMENTATION CLOSED`
 12. 已完成并接受 WP-02D Formal H1 Primary execution/evidence audit；verdict `PASS`
-13. 当前：`WP-03 Official Prediction Experiment Specification Freeze`
-14. spec 独立 review、用户手动 Commit/Push 与 GitHub Actions acceptance
-15. 另行 explicit authorization 后才可执行 WP-03 official prediction experiment
-16. 不确定性感知 MAPPO（仍锁定）
-17. ID/OOD、消融和相图
-18. 最终统计分析与论文结果
+13. Scientific design：`WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043`
+14. Repository publication：independent patch review、用户手工 Commit/Push、GitHub Actions success；
+    specification 不自证当前 Commit 已 accepted
+15. Accepted-main publication 后：`WP-03 Execution Stack Implementation Preparation`（仍不执行
+    official experiment）
+16. 另行 explicit authorization 后才可执行 WP-03 official prediction experiment
+17. 不确定性感知 MAPPO（仍锁定）
+18. ID/OOD、消融和相图
+19. 最终统计分析与论文结果
 
 Formal H1 Primary verdict 已接受为 `PASS`；formal sensitivity 未执行。服务器 evidence root 及其
-artifacts 不在本轮复制或修改，也不加入 Git。当前只允许 WP-03 official experiment read-only
-specification design/freeze；不得进行 official dataset generation/training/test、forecast uncertainty/control
-science、MAPPO、PyTorch/GPU training、ID/OOD 主实验、大规模 optimizer 或论文主结果实验。
+artifacts 不在本轮复制或修改，也不加入 Git。Scientific design freeze 与 repository publication 都不授权
+execution；不得进行 official dataset generation/training/test、
+forecast uncertainty/control science、MAPPO、PyTorch/GPU training、ID/OOD 主实验、大规模 optimizer
+或论文主结果实验。

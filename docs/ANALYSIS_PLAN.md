@@ -6,9 +6,15 @@ implementation 已 accepted，WP-03 accepted implementation Commit 为
 `55dd9ef5f951d9328266b8e331ba5ae68854b414`（`feat: close WP-03B official evaluation
 orchestration`），GitHub Actions CPU checks run #40 为 `completed / success`。WP-02D Primary gate 已
 在 execution/provenance HEAD `0b0742f51d59c2a8aa63614993e51131016cd33c` 上以
-`SCIENTIFICALLY ACCEPTED PASS` 关闭；formal sensitivity 未执行。当前阶段仅为
-`WP-03 Official Prediction Experiment Specification Freeze`，不启动任何 official predictor、
-forecast-control、uncertainty、ID/OOD 或 MAPPO scientific analysis。
+`SCIENTIFICALLY ACCEPTED PASS` 关闭；formal sensitivity 未执行。WP-03 official point-prediction v1
+scientific design 已由 D-043 冻结；不启动任何 official predictor、forecast-control、uncertainty、ID/OOD
+或 MAPPO scientific analysis。
+
+Scientific design status 为 `WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043`。
+它只冻结 P2 point prediction；P4/P8 不执行，calibration disposition 为 `EMPTY (0 traces)`。完整且唯一的
+exact design 见 `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。Repository publication 状态由 external
+governance 确定，不由 specification 自证；publication 与 scientific design freeze 均不是 execution
+authorization。
 
 ## 第一科学门槛
 
@@ -358,14 +364,19 @@ rescue、reverse 或改变 Primary verdict，也不是进入下一 design stage 
 
 WP-03 implementation engineering acceptance 仍不构成 prediction scientific evidence。WP-03 official
 scientific experiment 为 `NOT EXECUTED`，`FIRST OFFICIAL TEST EXECUTION` 为 `NOT OCCURRED`，
-`test_id` / `test_ood` 为 `UNSPENT`。Formal H1 PASS 只解锁 read-only
-`WP-03 Official Prediction Experiment Specification Freeze`，不授权 official dataset generation、
-training、forecast、ID/OOD test、forecast-control、uncertainty 或 MAPPO execution。
+`test_id` / `test_ood` 为 `UNSPENT`。Formal H1 PASS 只解锁了 read-only WP-03 scientific
+design/freeze；该 design 现由 D-043 冻结，但不授权 official dataset generation、training、forecast、
+ID/OOD test、forecast-control、uncertainty 或 MAPPO execution。
 
-未来 spec freeze 必须在任何 execution 前确定 exact train/validation/test_id/test_ood sizes 与 source
-inventories/conditions、training seeds、Primary/secondary P identities、DatasetProtocolSpecs/L identities、
-architecture candidate schema 与 deterministic complexity key、optimizer/lr/architecture/objective/
-transform/non-count encoding grids、training budget/epoch/early-stopping/checkpoint rules、B2/B3 grids、
-exact OOD cells、prediction bootstrap resamples/seed/method、runtime/Git/dependency provenance、exact
-Layer A identity 与 Layer B requirements。本 docs closure 不填写这些 experiment values；spec 独立审查、
-用户手动 Commit/Push 与 GitHub Actions acceptance 前不得执行 official prediction work。
+D-043 已在 `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中精确冻结 split/source inventories、
+P2 protocol、three-seed learned model selection、64-config/192-run search、deterministic complexity key、
+training/checkpoint rules、four reporting cells、OOD conditions、20,000-replicate paired whole-trace
+bootstrap、Layer A mapping、Layer B requirements 与 runtime provenance。Primary ID 仍只由 raw
+`Delta_RMSE` 及其 two-sided 95% CI 决定，没有 practical-effect delta；OOD cells 分别报告，不设权重或
+pooled score。
+
+Specification 的 accepted-main publication 状态由 independent patch review、用户手工 Commit/Push 与
+GitHub Actions success 的外部事实确定，不由本文断言。无论 publication 状态如何，均不得执行 official
+prediction work。Accepted-main publication 后的下一 engineering stage 仅为
+`WP-03 Execution Stack Implementation Preparation`，仍不授权 dataset generation、training、forecast
+或 official test。

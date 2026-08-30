@@ -14,15 +14,23 @@
 - Formal H1 Primary execution/provenance HEAD 为
   `0b0742f51d59c2a8aa63614993e51131016cd33c`；256/256 traces valid，verdict 为 `PASS`，formal
   sensitivity 未执行。
-- 当前阶段：`WP-03 Official Prediction Experiment Specification Freeze`。
+- WP-03 official point-prediction v1 scientific design 已由 D-043 冻结：
+  `WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043`。
+- Repository publication 状态由 independent patch review、用户手工 Commit/Push 与 GitHub Actions
+  success 的 external governance 确定，不由 specification 自证；该规则不是 execution authorization。
+- D-043 仅冻结 P2 point prediction：P4/P8 不执行，calibration disposition 为 `EMPTY (0 traces)`；
+  正式测试仍未执行，`FIRST OFFICIAL TEST EXECUTION` 未发生，
+  `test_id/test_ood` 仍为 `UNSPENT`。
+- Accepted-main publication 后的下一 engineering stage 仅为
+  `WP-03 Execution Stack Implementation Preparation`，仍不得执行正式实验。
 - WP-03B official predictors/baselines 必须是 deterministic、stateless、跨调用无 persistent state，
   且只能读取 WP-03A 冻结的有限 causal `PredictionContext` 与 immutable fitted artifact。
 - Official predictor science、WP-03 official experiment、`FIRST OFFICIAL TEST EXECUTION`、真实
   `SPENT` transition、uncertainty 实验、MAPPO、PyTorch/GPU scientific workload 与 ID/OOD 主实验
   继续锁定。
-- 不得重新执行 Formal H1 Primary、执行 sensitivity 或修改 Formal evidence。WP-03 official experiment
-  spec 未经独立 review、用户手动 Commit/Push 与 GitHub Actions acceptance 前，不得生成 official
-  prediction dataset、训练 predictor 或执行 official test。
+- 不得重新执行 Formal H1 Primary、执行 sensitivity 或修改 Formal evidence。D-043 scientific design
+  freeze 与 accepted-main publication 均不授权生成 official prediction dataset、训练 predictor 或执行
+  official test；这些 execution actions 继续要求未来独立的 explicit authorization 与全部既有 gates。
 
 ## 开发环境
 

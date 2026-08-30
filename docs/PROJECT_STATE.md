@@ -27,8 +27,12 @@ WP-00：wp00-stable
 ```
 
 Formal H1 evidence files 继续只保留在服务器 `artifacts/wp02d_h1_formal_v1/`，不得复制到 Git；本
-docs-only closure 不修改、删除或重建 evidence。当前阶段为
-`WP-03 Official Prediction Experiment Specification Freeze`。
+docs-only closure 不修改、删除或重建 evidence。WP-03 official point-prediction v1 scientific design 已由
+D-043 冻结：`WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043`。完整 exact design
+见 `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。
+
+Repository publication 状态由 external governance 确定，不由 specification 自证；该 rule 与 design
+freeze 都不构成 execution authorization。
 
 ## 工作包状态
 
@@ -49,6 +53,7 @@ docs-only closure 不修改、删除或重建 evidence。当前阶段为
 | WP-03 | IMPLEMENTATION CLOSED | Slice 1–17 implementation 已接受；未执行真实 WP-03 scientific experiment |
 | WP-03A | 已完成 | Prediction Interface & Dataset Protocol 已独立审查、Commit/Push，GitHub Actions 通过 |
 | WP-03B | IMPLEMENTATION CLOSED | Frozen scientific protocol 与 Slice 1–17 implementation 已接受；无 scientific result |
+| WP-03 Official Point-Prediction v1 spec | SCIENTIFIC DESIGN FROZEN — D-043 | P2 only；P4/P8 not executed；calibration EMPTY、0 traces；不是 execution authorization |
 
 ## WP-01 冻结接口与协议
 
@@ -800,15 +805,15 @@ WP-02D Primary gate 已以 `PASS` scientifically accepted；
 experiment 为 `NOT EXECUTED`，`FIRST OFFICIAL TEST EXECUTION` 为 `NOT OCCURRED`，
 `test_id` / `test_ood` 为 `UNSPENT`。
 
-当前阶段精确为 `WP-03 Official Prediction Experiment Specification Freeze`。Formal H1 PASS 只解锁
-这一 read-only scientific design/freeze，不授权直接 execution。未来 spec 至少须在任何 execution 前
-确定 exact train/validation/test_id/test_ood sizes 与 source trace inventories/conditions、training seeds、
-Primary/secondary P identities、DatasetProtocolSpecs/L identities、learned architecture candidate schema、
-deterministic model-complexity key、optimizer/lr/hidden/layer/objective/transform/non-count encoding grids、
-training budget/epoch/early-stopping/checkpoint procedure、B2/B3 grids、exact OOD cells、prediction
-bootstrap resamples/seed/method、runtime/Git/dependency provenance、exact Layer A identity 与 Layer B
-requirements。本 docs closure 不预填这些 values。
+Formal H1 PASS 解锁了 read-only scientific design/freeze，但不授权直接 execution。D-043 已在
+`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 中精确登记 TRAIN/VAL/TEST_ID/TEST_OOD source inventory、
+P2/L4 primary protocol、three fixed training seeds、64-config/192-run learned search、four reporting cells、
+OOD conditions、paired whole-trace bootstrap、Layer A mapping、Layer B requirements 与 runtime provenance；
+P4/P8 不执行，calibration disposition 为 `EMPTY (0 traces)`。
 
-Spec 独立审查、用户手动 Commit/Push 与 GitHub Actions acceptance 前，不得生成 official prediction
-dataset、训练 predictor、生成 official forecast 或执行 test_id/test_ood；forecast-control、uncertainty、
-MAPPO、ID/OOD scientific experiment 与 GPU scientific workload 继续锁定。
+Repository publication 状态由 independent patch review、用户手工 Commit/Push 与 GitHub Actions
+success 的 external governance 确定，不由本文自证。不得生成 official prediction dataset、训练
+predictor、生成 official forecast 或执行 test_id/test_ood；forecast-control、uncertainty、MAPPO、ID/OOD
+scientific experiment 与 GPU scientific workload 继续锁定。Accepted-main publication 后的下一
+engineering stage 仅为 `WP-03 Execution Stack Implementation Preparation`；正式执行仍须另行 explicit
+authorization。

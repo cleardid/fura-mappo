@@ -12,7 +12,9 @@
 - `WP-03 IMPLEMENTATION CLOSED`；WP-03 accepted implementation Commit：
   `55dd9ef5f951d9328266b8e331ba5ae68854b414`。
 - 当前没有 WP-03 scientific result，也没有执行 WP-03 official prediction experiment。
-- 当前阶段：`WP-03 Official Prediction Experiment Specification Freeze`。
+- Scientific design status：`WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043`。
+- WP-03 official experiment：`NOT EXECUTED`；`FIRST OFFICIAL TEST EXECUTION`：未发生；
+  `test_id/test_ood`：`UNSPENT`。
 
 ## WP-01 已完成能力
 
@@ -33,6 +35,10 @@
 
 在 frozen Primary H=2 setting 中，True-future Oracle 相对 Reactive 的 normalized completion fraction
 平均提高约 0.3175；这不是 learned predictor、forecast-control、uncertainty、MAPPO 或所有环境的
-科学证据。下一阶段只进行 read-only official experiment specification design/freeze；在 spec 独立审查、
-用户手动 Commit/Push 与 GitHub Actions acceptance 前，不得生成 official prediction dataset、训练
-predictor 或执行 official test。
+科学证据。D-043 只冻结 P2 point prediction：P4/P8 不执行，calibration disposition 为
+`EMPTY (0 traces)`。Repository publication 由 independent patch review、用户手工 Commit/Push 及
+GitHub Actions success 的 external governance 确定；specification 不自证其所在 Commit 已 accepted，
+publication 也不构成执行授权。Accepted-main publication 后的下一 engineering stage 仅为
+`WP-03 Execution Stack Implementation Preparation`。正式执行仍须另行 explicit authorization。
+
+完整 specification 见 `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。

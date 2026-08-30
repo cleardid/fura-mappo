@@ -9,7 +9,10 @@
 ```text
 WP-03 IMPLEMENTATION CLOSED
 WP-02D PRIMARY H1 GATE: SCIENTIFICALLY ACCEPTED PASS
-CURRENT STAGE: WP-03 Official Prediction Experiment Specification Freeze
+SCIENTIFIC DESIGN STATUS:
+WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-043
+REPOSITORY PUBLICATION:
+external governance; specification does not self-assert accepted Commit status
 WP-03 accepted implementation Commit:
 55dd9ef5f951d9328266b8e331ba5ae68854b414
 
@@ -26,6 +29,12 @@ Primary verdict，也不是进入下一 design stage 的前置条件。WP-03 eng
 scientific evidence；WP-03 official experiment 为 `NOT EXECUTED`，`FIRST OFFICIAL TEST EXECUTION`
 为 `NOT OCCURRED`，`test_id` / `test_ood` 为 `UNSPENT`。`1092d9c...` 仅保留为历史 WP-02D3
 checkpoint，不得机械执行其旧 runner command。
+
+D-043 只冻结 P2 point prediction；P4/P8 不执行，calibration disposition 为 `EMPTY (0 traces)`。完整
+exact design 见 `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。Repository publication 状态由 independent
+patch review、用户手工 Commit/Push 与 GitHub Actions success 的 external governance 确定，不由
+specification 自证；该 rule 不是 execution authorization。Accepted-main publication 后的下一
+engineering stage 仅为 `WP-03 Execution Stack Implementation Preparation`，仍不授权正式执行。
 
 ## 稳定基线
 
@@ -477,16 +486,16 @@ fresh previously unexposed test_id/test_ood，相对 spent sets 的 trace_id、s
 与 `realized_trace_sha256` 全局不相交，满足 condition/OOD rules，并新建 manifest、
 test identities、protocol/version/provenance 与两层 freezes；failure record/spent identities 必须保留。
 
-当前阶段精确为 `WP-03 Official Prediction Experiment Specification Freeze`。Formal H1 PASS 只解锁
-这一 read-only scientific design/freeze，不授权 WP-03 official execution。Future spec 必须在任何
-execution 前确定 exact train/validation/test_id/test_ood sizes 与 source inventories/conditions、training
-seeds、Primary/secondary P identities、DatasetProtocolSpecs/L identities、architecture candidate schema、
-deterministic complexity key、optimizer/lr/hidden/layer/objective/transform/non-count encoding grids、
-training budget/epoch/early-stopping/checkpoint procedure、B2/B3 grids、exact OOD cells、prediction
-bootstrap resamples/seed/method、runtime/Git/dependency provenance、exact Layer A identity 与 Layer B
-requirements；本轮不决定这些 values。
+D-043 已冻结 WP-03 official point-prediction v1 scientific design。Formal H1 PASS 只解锁了 read-only
+scientific design/freeze，不授权 WP-03 official execution。`docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md` 已
+精确登记 split/source inventory、P2 protocol、fixed training
+seeds、64-config/192-run learned search、training/checkpoint rules、four reporting cells、OOD conditions、
+20,000-replicate paired whole-trace bootstrap、Layer A mapping、Layer B requirements 与 runtime provenance；
+P4/P8 不执行，calibration disposition 为 `EMPTY (0 traces)`。
 
-Spec 独立审查、用户手动 Commit/Push 与 GitHub Actions acceptance 前，不得生成 official prediction
-dataset、训练 predictor、生成 official forecast 或执行 test_id/test_ood；不得发生 FIRST OFFICIAL TEST
-EXECUTION 或 SPENT transition，也不得运行 forecast-control、uncertainty、MAPPO、ID/OOD scientific
-experiment 或 GPU scientific workload。
+D-043 scientific design freeze 与 repository publication 均不授权生成 official prediction dataset、训练
+predictor、生成 official forecast 或执行 test_id/test_ood；不得发生 FIRST OFFICIAL TEST EXECUTION 或
+SPENT transition，也不得运行 forecast-control、uncertainty、MAPPO、ID/OOD scientific experiment 或
+GPU scientific workload。Repository publication 状态由 external governance 确定，不由本文自证；
+accepted-main publication 后只能进入 `WP-03 Execution Stack Implementation Preparation`，正式执行仍须
+另行 explicit authorization。
