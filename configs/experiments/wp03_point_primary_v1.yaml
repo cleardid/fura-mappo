@@ -1,0 +1,256 @@
+schema: fura-mappo.wp03-point-experiment
+version: 1
+experiment:
+  experiment_id: wp03_point_primary_v1
+  primary_prediction_horizon: 2
+  secondary_prediction:
+    horizons: [4, 8]
+    disposition: NOT_EXECUTED_IN_V1
+  calibration:
+    disposition: EMPTY
+    trace_count: 0
+episode:
+  start_step: 0
+  num_steps: 256
+  num_zones: 4
+  zone_bounds:
+    - [0.0, 1.0, 0.0, 1.0]
+    - [1.0, 2.0, 0.0, 1.0]
+    - [2.0, 3.0, 0.0, 1.0]
+    - [3.0, 4.0, 0.0, 1.0]
+conditions:
+  id:
+    type: drifting_hotspot
+    base_intensities: [0.025, 0.025, 0.025, 0.025]
+    hotspot_amplitudes: [0.55]
+    hotspot_scales: [0.45]
+    initial_hotspot_positions:
+      - [0.5, 0.5]
+    hotspot_velocities:
+      - [0.25, 0.0]
+    zone_bounds:
+      - [0.0, 1.0, 0.0, 1.0]
+      - [1.0, 2.0, 0.0, 1.0]
+      - [2.0, 3.0, 0.0, 1.0]
+      - [3.0, 4.0, 0.0, 1.0]
+    priority_range: [0.5, 0.5]
+    service_time_range: [1, 2]
+    deadline_offset_range: [2, 3]
+    generation:
+      num_steps: 256
+  near_v020:
+    type: drifting_hotspot
+    base_intensities: [0.025, 0.025, 0.025, 0.025]
+    hotspot_amplitudes: [0.55]
+    hotspot_scales: [0.45]
+    initial_hotspot_positions:
+      - [0.5, 0.5]
+    hotspot_velocities:
+      - [0.20, 0.0]
+    zone_bounds:
+      - [0.0, 1.0, 0.0, 1.0]
+      - [1.0, 2.0, 0.0, 1.0]
+      - [2.0, 3.0, 0.0, 1.0]
+      - [3.0, 4.0, 0.0, 1.0]
+    priority_range: [0.5, 0.5]
+    service_time_range: [1, 2]
+    deadline_offset_range: [2, 3]
+    generation:
+      num_steps: 256
+  near_v030:
+    type: drifting_hotspot
+    base_intensities: [0.025, 0.025, 0.025, 0.025]
+    hotspot_amplitudes: [0.55]
+    hotspot_scales: [0.45]
+    initial_hotspot_positions:
+      - [0.5, 0.5]
+    hotspot_velocities:
+      - [0.30, 0.0]
+    zone_bounds:
+      - [0.0, 1.0, 0.0, 1.0]
+      - [1.0, 2.0, 0.0, 1.0]
+      - [2.0, 3.0, 0.0, 1.0]
+      - [3.0, 4.0, 0.0, 1.0]
+    priority_range: [0.5, 0.5]
+    service_time_range: [1, 2]
+    deadline_offset_range: [2, 3]
+    generation:
+      num_steps: 256
+  structural_markov:
+    type: markov_switching
+    state_intensities:
+      - [0.50, 0.10, 0.025, 0.025]
+      - [0.025, 0.025, 0.10, 0.50]
+    transition_matrix:
+      - [0.95, 0.05]
+      - [0.05, 0.95]
+    initial_state: 0
+    zone_bounds:
+      - [0.0, 1.0, 0.0, 1.0]
+      - [1.0, 2.0, 0.0, 1.0]
+      - [2.0, 3.0, 0.0, 1.0]
+      - [3.0, 4.0, 0.0, 1.0]
+    priority_range: [0.5, 0.5]
+    service_time_range: [1, 2]
+    deadline_offset_range: [2, 3]
+    generation:
+      num_steps: 256
+splits:
+  train:
+    count: 128
+    seed_start: 410000
+    seed_end: 410127
+    cell_id: ID_DRIFT_V025
+    trace_id_pattern: wp03-train-id-<seed>
+  validation:
+    count: 64
+    seed_start: 420000
+    seed_end: 420063
+    cell_id: ID_DRIFT_V025
+    trace_id_pattern: wp03-validation-id-<seed>
+  calibration:
+    count: 0
+    disposition: EMPTY
+  test_id:
+    count: 128
+    seed_start: 430000
+    seed_end: 430127
+    cell_id: ID_DRIFT_V025
+    trace_id_pattern: wp03-test-id-<seed>
+  test_ood:
+    count: 96
+    cells:
+      - kind: NEAR_OOD
+        cell_id: NEAR_DRIFT_V020
+        count: 32
+        seed_start: 440000
+        seed_end: 440031
+        trace_id_pattern: wp03-test-ood-near-v020-<seed>
+      - kind: NEAR_OOD
+        cell_id: NEAR_DRIFT_V030
+        count: 32
+        seed_start: 441000
+        seed_end: 441031
+        trace_id_pattern: wp03-test-ood-near-v030-<seed>
+      - kind: STRUCTURAL_OOD
+        cell_id: STRUCT_MARKOV_V1
+        count: 32
+        seed_start: 450000
+        seed_end: 450031
+        trace_id_pattern: wp03-test-ood-struct-markov-<seed>
+  ood_reporting:
+    cell_weights: NONE
+    pooled_official_score: NONE
+    reporting: MANDATORY_DESCRIPTIVE_ONLY
+protocols:
+  prediction_horizon: 2
+  history_lengths: [4, 8, 16, 32]
+  primary_history_length: 4
+  additional_history_lengths: [8, 16, 32]
+feature_encoding:
+  identity: wp03-point-feature-encoding-v1
+  history_values: transformed_history_counts_oldest_to_newest_zone_ascending_row_major
+  history_mask: float32_zero_one
+  absolute_step: divide_by_255
+  excluded_numeric_fields: [steps_remaining, prediction_horizon, zone_schema_sha256]
+  transforms: [T0, T1]
+  padding: zeros_remain_zero
+  dtype: float32
+  fitted_normalization: NONE
+architecture:
+  identity: wp03-stateless-mlp-v1
+  family: stateless_feed_forward_mlp
+  hidden_layer_count: 2
+  hidden_widths: [64, 128]
+  hidden_activation: ReLU
+  output_dimension: 8
+  output_link: softplus_plus_epsilon
+  output_epsilon: 0.000001
+  prohibited: [dropout, batch_normalization, layer_normalization, residual_state, persistent_hidden_state]
+search:
+  objectives: [O0, O1]
+  transforms: [T0, T1]
+  learning_rates: [0.0003, 0.001]
+  canonical_dimensions: [width, learning_rate, history_length, objective, transform]
+  selection_total_order:
+    - validation_algorithm_rmse
+    - model_complexity_key
+    - shorter_history_length
+    - objective_O0_before_O1
+    - transform_T0_before_T1
+    - canonical_order
+  candidate_count: 64
+training:
+  training_seeds: [610001, 610002, 610003]
+  optimizer:
+    name: AdamW
+    betas: [0.9, 0.999]
+    eps: 0.00000001
+    weight_decay: 0.0001
+    amsgrad: DISABLED
+    scheduler: NONE
+    gradient_clipping: NONE
+  mode: full_batch
+  sample_order: canonical_fixed
+  shuffle: NONE
+  sampler_rng: NONE
+  dtype: float32
+  amp: DISABLED
+  device_count: 1
+  max_epochs: 300
+  patience: 30
+  min_improvement: 0.00001
+  checkpoint_rule: new_rmse_strictly_less_than_best_minus_min_improvement
+  initial_best: first_finite_epoch
+  final_retrain: NONE
+initialization:
+  rng: local_explicit_generator
+  numpy_global_rng: PROHIBITED
+  torch_global_rng: PROHIBITED
+  hidden_weights: xavier_uniform_gain_sqrt_2
+  output_weights: xavier_uniform_gain_1
+  biases: zero
+  layer_order: fixed_canonical
+determinism:
+  numeric_dtype: float32
+  amp: DISABLED
+  stochastic_layers: NONE
+  torch_compile: DISABLED
+  deterministic_algorithms: REQUIRED
+  tf32: DISABLED
+  cudnn_benchmark: DISABLED
+  device_count: 1
+  validation_contract: safe_load_twice_and_order_invariant_exact_equal
+bootstrap:
+  num_resamples: 20000
+  generator: PCG64
+  rng_seed: 910001
+  method: paired_whole_test_trace_percentile
+  quantile_method: linear
+  interval: two_sided_95_percent
+baselines:
+  kinds: [B0, B1, B2, B3, B4, B5]
+  b2_history_lengths: [4, 8, 16, 32]
+  b2_internal_total_order: [validation_primary_rmse, shorter_history_length]
+  b3_history_lengths: [4, 8, 16, 32]
+  b3_alphas: [0.25, 0.50, 0.75]
+  b3_internal_total_order: [validation_primary_rmse, shorter_history_length, smaller_alpha]
+  two_stage_rule:
+    step_1: lock_each_baseline_internal_variant
+    step_2: compare_six_locked_variants_by_validation_primary_rmse
+  bstar_tie_order: [B0, B1, B2, B3, B4, B5]
+  required_complete_finite_valid_forecasts: REQUIRED
+  failure_state: PREDICTION_BASELINE_SELECTION_FAILURE
+  fixed_representation_protocol: P2L4
+  matching_history_protocols: [B2, B3]
+  b5_train_support: [0, 256]
+  b5_required_future_support: [1, 256]
+  support_interval_kind: half_open
+feasibility:
+  anchors_per_trace: 255
+  valid_target_cells_per_trace: 2036
+  training_run_count: 192
+artifact:
+  reserved_root: artifacts/wp03_prediction_official_v1/
+  publication: no_overwrite_safe_canonical_content_hash_bound
+  git_tracking: PROHIBITED

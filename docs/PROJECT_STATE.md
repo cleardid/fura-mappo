@@ -34,6 +34,13 @@ D-043 冻结：`WP-03 OFFICIAL POINT-PREDICTION v1 SCIENTIFIC SPEC FROZEN — D-
 Repository publication 状态由 external governance 确定，不由 specification 自证；该 rule 与 design
 freeze 都不构成 execution authorization。
 
+当前 engineering stage 为 `WP-03 Execution Stack Implementation / ES-01`。ES-01 scope 只包括 frozen
+spec、execution-plan identity 与 safe checkpoint core，且不执行任何 scientific workload。其
+repository acceptance 由 independent patch review、用户手工 Commit/Push 与 GitHub Actions success 的
+external governance 确定；本文不自证其所在 Commit 的 accepted-main 状态。Machine-readable scientific spec 为
+`configs/experiments/wp03_point_primary_v1.yaml`，canonical SHA-256 为
+`93fd011f0dbbdbc784db1b12e18aa37c4d15121c22620649b7218d2799c84fd0`。
+
 ## 工作包状态
 
 | 工作包 | 状态 | 说明 |
@@ -53,6 +60,7 @@ freeze 都不构成 execution authorization。
 | WP-03 | IMPLEMENTATION CLOSED | Slice 1–17 implementation 已接受；未执行真实 WP-03 scientific experiment |
 | WP-03A | 已完成 | Prediction Interface & Dataset Protocol 已独立审查、Commit/Push，GitHub Actions 通过 |
 | WP-03B | IMPLEMENTATION CLOSED | Frozen scientific protocol 与 Slice 1–17 implementation 已接受；无 scientific result |
+| WP-03 Execution Stack | ES-01 | spec/plan identity 与 safe checkpoint core；accepted-main publication 由 external governance 决定 |
 | WP-03 Official Point-Prediction v1 spec | SCIENTIFIC DESIGN FROZEN — D-043 | P2 only；P4/P8 not executed；calibration EMPTY、0 traces；不是 execution authorization |
 
 ## WP-01 冻结接口与协议
@@ -814,6 +822,6 @@ P4/P8 不执行，calibration disposition 为 `EMPTY (0 traces)`。
 Repository publication 状态由 independent patch review、用户手工 Commit/Push 与 GitHub Actions
 success 的 external governance 确定，不由本文自证。不得生成 official prediction dataset、训练
 predictor、生成 official forecast 或执行 test_id/test_ood；forecast-control、uncertainty、MAPPO、ID/OOD
-scientific experiment 与 GPU scientific workload 继续锁定。Accepted-main publication 后的下一
-engineering stage 仅为 `WP-03 Execution Stack Implementation Preparation`；正式执行仍须另行 explicit
-authorization。
+scientific experiment 与 GPU scientific workload 继续锁定。当前 engineering stage 仅为
+`WP-03 Execution Stack Implementation / ES-01`；repository acceptance 由 external governance 决定，
+正式执行仍须另行 explicit authorization。

@@ -602,12 +602,17 @@ test_id/test_ood: UNSPENT
 
 本文件不自证其所在 Commit 已成为 latest accepted main；accepted-main publication 由 independent patch
 review、用户手工 Commit/Push 与 GitHub Actions success 的外部治理事实确定。Accepted-main publication
-后的下一 engineering stage 为：
+后当前 engineering stage 为：
 
 ```text
-NEXT: WP-03 Execution Stack Implementation Preparation
+WP-03 Execution Stack Implementation
+ES-01
 ```
 
-下一阶段只允许 trainer、safe checkpoint、plan serialization、runtime provenance 与 official
-orchestration engineering；仍不得生成 official data、训练 predictor 或执行 official test，除非未来另有
-explicit authorization 和全部既有 gates 均已满足。
+Machine-readable frozen representation 为
+`configs/experiments/wp03_point_primary_v1.yaml`，canonical SHA-256 为
+`93fd011f0dbbdbc784db1b12e18aa37c4d15121c22620649b7218d2799c84fd0`。ES-01 scope 只包括 spec/plan
+identity 与 safe checkpoint serialization core。其 repository acceptance 由 independent patch review、
+用户手工 Commit/Push 与 GitHub Actions success 的 external governance 确定；本文不自证其所在 Commit
+的 accepted-main 状态。该 engineering work 不授权生成 official data、训练 predictor 或执行 official
+test；任何正式执行仍须未来 explicit authorization 且全部既有 gates 均已满足。

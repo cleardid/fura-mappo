@@ -15,6 +15,14 @@ REPOSITORY PUBLICATION:
 external governance; specification does not self-assert accepted Commit status
 WP-03 accepted implementation Commit:
 55dd9ef5f951d9328266b8e331ba5ae68854b414
+CURRENT ENGINEERING STAGE:
+WP-03 Execution Stack Implementation / ES-01
+ES-01 REPOSITORY ACCEPTANCE:
+external governance:
+independent patch review
+-> user manual Commit/Push
+-> GitHub Actions success
+this document does not self-assert its Commit as accepted main
 
 Formal H1 execution/provenance HEAD:
 0b0742f51d59c2a8aa63614993e51131016cd33c
@@ -33,8 +41,9 @@ checkpoint，不得机械执行其旧 runner command。
 D-043 只冻结 P2 point prediction；P4/P8 不执行，calibration disposition 为 `EMPTY (0 traces)`。完整
 exact design 见 `docs/WP03_OFFICIAL_EXPERIMENT_SPEC.md`。Repository publication 状态由 independent
 patch review、用户手工 Commit/Push 与 GitHub Actions success 的 external governance 确定，不由
-specification 自证；该 rule 不是 execution authorization。Accepted-main publication 后的下一
-engineering stage 仅为 `WP-03 Execution Stack Implementation Preparation`，仍不授权正式执行。
+specification 自证；该 rule 不是 execution authorization。当前 engineering stage 仅为
+`WP-03 Execution Stack Implementation / ES-01`；其 repository acceptance 由上述 external governance
+确定，仍不授权正式执行。
 
 ## 稳定基线
 
@@ -497,5 +506,13 @@ D-043 scientific design freeze 与 repository publication 均不授权生成 off
 predictor、生成 official forecast 或执行 test_id/test_ood；不得发生 FIRST OFFICIAL TEST EXECUTION 或
 SPENT transition，也不得运行 forecast-control、uncertainty、MAPPO、ID/OOD scientific experiment 或
 GPU scientific workload。Repository publication 状态由 external governance 确定，不由本文自证；
-accepted-main publication 后只能进入 `WP-03 Execution Stack Implementation Preparation`，正式执行仍须
+accepted-main publication 后当前只进入 `WP-03 Execution Stack Implementation / ES-01`，正式执行仍须
 另行 explicit authorization。
+
+`WP-03 Execution Stack Implementation / ES-01` scope 只包括 official spec identity、execution-plan
+identity 与 safe checkpoint serialization core；不生成 official data、不训练模型，也不构造 Layer A 或
+Layer B。Machine-readable frozen spec 为
+`configs/experiments/wp03_point_primary_v1.yaml`，canonical SHA-256 为
+`93fd011f0dbbdbc784db1b12e18aa37c4d15121c22620649b7218d2799c84fd0`。ES-01 repository acceptance 由
+independent patch review、用户手工 Commit/Push 与 GitHub Actions success 的 external governance
+确定；本文不自证其所在 Commit 的 accepted-main 状态。
